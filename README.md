@@ -1,0 +1,1 @@
+# Javascript implementation of AbstractMark

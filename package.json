@@ -1,0 +1,23 @@
+{
+  "name": "javascript",
+  "version": "1.0.0",
+  "description": "Javascript implementation of AbstractMark",
+  "bin": {
+    "abstrackmark": "bin/abstrackmark"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abstractmark/javascript.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/abstractmark/javascript/issues"
+  },
+  "homepage": "https://github.com/abstractmark/javascript#readme"
+}
