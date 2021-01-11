@@ -1,9 +1,9 @@
 {
-  "name": "javascript",
+  "name": "abstractmark",
   "version": "1.0.0",
   "description": "Javascript implementation of AbstractMark",
   "bin": {
-    "abstrackmark": "bin/abstrackmark"
+    "abstractmark": "bin/abstractmark"
   },
   "main": "index.js",
   "scripts": {
@@ -15,7 +15,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/abstractmark/javascript/issues"
   },
