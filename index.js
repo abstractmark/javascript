@@ -2,20 +2,20 @@
 const cli = () => {
   const args = process.argv.slice(2)
     if(args.length > 0){
-      let {Parse} = require('./src/parser');
+      let {Tokenize} = require('./src/tokenizer');
       let file = args[0];
       // Check file extension
       if(!(file.endsWith('.am') || file.endsWith('.abstractmark'))) throw new Error('AbstractMark: only file with extension .am or .abstractmark is allowed')
       // Read file data
       const fs = require('fs');
       let data = fs.readFileSync(file, 'utf-8')
-      console.log(Parse(data))
+      console.log(Tokenize(data))
     }
 }
 
 const AbstractMark = (abstractmark) => {
-  let {Parse} = require('./src/parser');
-  let parsedData = Parse(abstractmark)
-  return parsedData
+  let {Tokenize} = require('./src/tokenizer');
+  let TokenizedData = Tokenize(abstractmark)
+  return TokenizedData
 }
 module.exports = {cli, AbstractMark}
