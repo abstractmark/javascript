@@ -11,8 +11,7 @@ const cli = () => {
       const fs = require('fs');
       let data = fs.readFileSync(file, 'utf-8')
       const tokenizedData = Tokenize(data)
-      console.log(tokenizedData)
-      Lex(tokenizedData)
+      console.log(Lex(tokenizedData))
     }
 }
 
