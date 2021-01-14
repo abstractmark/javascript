@@ -2,6 +2,9 @@
 
 Lorem ipsum
 hi
+---
+1
+2. Hello World
 
 >not a Blockquote
 > Blockquote
@@ -14,3 +17,8 @@ myList:
     - thirdList
         - forthList
 helloooo
+abstractmark example.am
+1.Hello
+2. World
+- Unordered
+-hello
