@@ -16,7 +16,8 @@ const cli = () => {
 }
 
 const AbstractMark = (abstractmark) => {
-  let TokenizedData = Tokenize(abstractmark)
-  return TokenizedData
+  const TokenizedData = Tokenize(abstractmark)
+  const LexedData = Lex(TokenizedData)
+  return LexedData
 }
 module.exports = {cli, AbstractMark}
