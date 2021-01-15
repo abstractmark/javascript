@@ -19,7 +19,7 @@ const Tokenize = (abstractmark) => {
         var totalTabs = 0
         for(let j = 0; j< data[i].length; j++){
             if(data[i].charCodeAt(j) !== 32 && data[i].charCodeAt(j) !== 9) j = data[i].length // Break only the inner loop
-            if(data[i].charCodeAt(j) === 9) totalTab += 1
+            if(data[i].charCodeAt(j) === 9) totalTabs += 1
             else if (data[i].charCodeAt(j) === 32) totalSpace += 1
         }
         newData.totalSpace = totalSpace
@@ -35,7 +35,10 @@ const Tokenize = (abstractmark) => {
         else return GCF(b, a % b);
     }
     const findIndentationSpace = arrayOfTotalSpace => arrayOfTotalSpace.reduce(GCF)
-    const indentationSpace = findIndentationSpace(totalSpaceArray)
+    var indentationSpace = findIndentationSpace(totalSpaceArray)
+    // Could not find constant indentation.
+    if(indentationSpace === 1) console.log("\x1b[33mAbstractMark warning: 1 Space for indentation space might cause error or unexpected behavior. Please use atleast 2 spaces for your indentation  \x1b[0m")
+    if(indentationSpace === 0) indentationSpace = 1
     //Find the total tabs of each line and delete the totalspace
     for(let i = 0; i< tokenizedData.length; i++){
         // Only continue if totalSpace is not null and is not undefined
