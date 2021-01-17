@@ -1,5 +1,6 @@
 const {Tokenize} = require('./src/tokenizer');
 const {Lex} = require('./src/lexer');
+const { Parse } = require('./src/parser');
 // Code for command line command
 const cli = () => {
   const args = process.argv.slice(2)
@@ -11,13 +12,16 @@ const cli = () => {
       const fs = require('fs');
       let data = fs.readFileSync(file, 'utf-8')
       const tokenizedData = Tokenize(data)
-      console.log(Lex(tokenizedData))
+      const lexedData = Lex(tokenizedData)
+      const parsedData = Parse(lexedData)
+      console.log(parsedData)
     }
 }
 
 const AbstractMark = (abstractmark) => {
   const TokenizedData = Tokenize(abstractmark)
-  const LexedData = Lex(TokenizedData)
-  return LexedData
+  const lexedData = Lex(TokenizedData)
+  const parsedData = Parse(lexedData)
+  return parsedData
 }
 module.exports = {cli, AbstractMark}
