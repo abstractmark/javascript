@@ -22,15 +22,6 @@ const Lex = (tokenizedData) => {
         // Check whether the line contains table
         if(/\|(.*?)\|/.test(tokenizedData[i].value)) newData.includes.table = true
         else newData.includes.table = false
-        // Check whether the line contains bold text
-        if(/\*\*(.*?)\*\*/.test(tokenizedData[i].value)) newData.includes.bold = true
-        else newData.includes.bold = false
-        // Check whether the line contains italic text
-        if(/_(.*?)_/.test(tokenizedData[i].value)) newData.includes.italic = true
-        else newData.includes.italic = false
-        // Check whether the line contains underline text
-        if(/%(.*?)%/.test(tokenizedData[i].value)) newData.includes.underline = true
-        else newData.includes.underline = false
         // Check whether the line contains task list
         if(/^- \[.\]/.test(tokenizedData[i].value)) newData.includes.taskList = true
         else newData.includes.taskList = false
