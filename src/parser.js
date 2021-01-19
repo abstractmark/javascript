@@ -4,6 +4,7 @@ const parseTypography = data => data
     .replace(/_(.*?)_/gim, "<i>$1</i>")
     .replace(/%(.*?)%/gim, "<u>$1</u>")
     .replace(/\~\~(.*)\~\~/gim, "<del>$1</del>")
+    .replace(/\`([^\`]+)\`/gim, "<code>$1</code>")
 
 const Parse = lexedData => {
     let parsedData = [];
@@ -20,18 +21,51 @@ const Parse = lexedData => {
             // parse typography of the value
             data.value = parseTypography(data.value)
             // Checking the type of each data
-            if(data.includes.heading){
+            if(data.includes.fencedCodeBlock){
+                newData.type = "fencedCodeBlock";
+                newData.value = "";
+                for(let j = index + 1; j< lexedData.length; j++){
+                    // Check if the line is a fenced code block close tag
+                    if(lexedData[j].includes.fencedCodeBlock){
+                        index = j;
+                        break;
+                    }else{
+                        newData.value += `${lexedData[j].value}<br />` // Add a <br> tag in the end of each line
+                    }
+                }
+                paragraphValue.push(newData)
+            }
+            else if(data.includes.heading){
                 newData.type = "heading";
                 newData.headingLevel = 0;
                 for(let j = 0; j< data.value.length; j++){
+                    // Stop the loop when the character is NOT "#"
                     if(data.value[j] !== "#") break
+                    // Otherwise, add a heading level for the heading
                     else newData.headingLevel += 1
                 }
                 newData.value = data.value.substring(newData.headingLevel + 1)
+                // Check if the heading includes heading Id
+                if(data.includes.headingId){
+                    newData.headingId = "";
+                    for(let i = 0; i< data.value.length; i++){
+                        // Check whether if a heading containt '{#' and ends with '}'
+                        if(data.value[i] === "{" && data.value[i + 1] === "#"){
+                            newData.value = newData.value.substr(0, i-newData.headingLevel-1).trim()
+                            for(let j = i + 2; j< data.value.length; j++){
+                                if(data.value[j] === "}")break;
+                                else newData.headingId += data.value[j]
+                            }
+                        }
+                    }
+                    //Remove unnecessary space form heading Id
+                    newData.headingId = newData.headingId.trim()
+                }
+                //Push result to the variables
                 paragraphValue.push(newData)
             }
             // Check if it is a plain text
-            else if(Object.values(data).indexOf(true) === -1){
+            else if(Object.values(data.includes).indexOf(true) === -1){
                 newData.type = "plain"
                 newData.value = data.value
                 paragraphValue.push(newData)
@@ -52,12 +86,18 @@ const Parse = lexedData => {
     const toHTML = (data) => {
         let htmlData = ""
         for(let i = 0; i< data.length; i++){
+            // Check if whether it is a plain text, heading or fenced code block
             if(data[i].type === "plain"){
-                htmlData += data[i].value
+                // Add br tags if there is next line inside the paragraph
+                if(data[i + 1]) htmlData += `${data[i].value}<br />`
+                else htmlData += data[i].value
             }else if(data[i].type === "heading"){
-                htmlData += `<h${data[i].headingLevel}>${data[i].value}</h${data[i].headingLevel}>`
-            }else{
-                htmlData += "<br />"
+                // Check if the heading has its id
+                if(data[i].headingId) htmlData += `<h${data[i].headingLevel} id = "${data[i].headingId}">${data[i].value}</h${data[i].headingLevel}>`
+                else htmlData += `<h${data[i].headingLevel}>${data[i].value}</h${data[i].headingLevel}>`
+            }else if(data[i].type === "fencedCodeBlock"){
+                // Insert fenced code block value inside <code> and <pre> tags
+                htmlData += `<pre><code>${data[i].value}</code></pre>`
             }
         }
         return htmlData
