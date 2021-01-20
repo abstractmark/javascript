@@ -18,6 +18,16 @@ const Parse = lexedData => {
         else if(data.value === "" && !endParagraph) endParagraph = true;
         else{
             let newData = {};
+            // Replace all escape characters to it's html entities
+            data.value = data.value.replace(/\\\*/g, '&ast;')
+            data.value = data.value.replace(/\\\&/g, '&amp;')
+            data.value = data.value.replace(/\\\</g, '&lt;')
+            data.value = data.value.replace(/\\\>/g, '&gt;')
+            data.value = data.value.replace(/\\\"/g, '&quot;')
+            data.value = data.value.replace(/\\\'/g, '&#39;')
+            data.value = data.value.replace(/\\\%/g, '&percnt;')
+            data.value = data.value.replace(/\\\_/g, '&UnderBar;')
+            data.value = data.value.replace(/\\\`/g, '&#96;')
             // parse typography of the value
             data.value = parseTypography(data.value)
             // Checking the type of each data
@@ -70,7 +80,7 @@ const Parse = lexedData => {
                 newData.value = data.value
                 paragraphValue.push(newData)
             }
-            // Temporary data (will be changed later)
+            // Plain text
             else paragraphValue.push(data)
         }
         // If it's the end of paragraph or it's end of the file

@@ -25,9 +25,6 @@ const Lex = (tokenizedData) => {
         // Check whether the line contains task list
         if(/^- \[.\]/.test(tokenizedData[i].value)) newData.includes.taskList = true
         else newData.includes.taskList = false
-        // Check whether the line contains escape character
-        if(/\\[^A-Z0-9a-z]/.test(tokenizedData[i].value)) newData.includes.escapeChar = true
-        else newData.includes.escapeChar = false
         // Check whether the line is class definition
         if(tokenizedData[i].value === "---define") newData.includes.defineClass = true
         else newData.includes.defineClass = false
