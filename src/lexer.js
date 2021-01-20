@@ -23,7 +23,7 @@ const Lex = (tokenizedData) => {
         if(/\|(.*?)\|/.test(tokenizedData[i].value)) newData.includes.table = true
         else newData.includes.table = false
         // Check whether the line contains task list
-        if(/^- \[.\]/.test(tokenizedData[i].value)) newData.includes.taskList = true
+        if(/^- \[[xX ]\] \S+/.test(tokenizedData[i].value)) newData.includes.taskList = true
         else newData.includes.taskList = false
         // Check whether the line is class definition
         if(tokenizedData[i].value === "---define") newData.includes.defineClass = true
@@ -38,7 +38,7 @@ const Lex = (tokenizedData) => {
         if(/^\d+\. ./.test(tokenizedData[i].value)) newData.includes.orderedList = true
         else newData.includes.orderedList = false
         // Check whether the line is Unordered List
-        if(/^- ./.test(tokenizedData[i].value)) newData.includes.unorderedList = true
+        if(/^- (.?!\[[xX ]\])/.test(tokenizedData[i].value)) newData.includes.unorderedList = true
         else newData.includes.unorderedList = false
         // Check whether the line is heading
         if(/^#{1,6} ./.test(tokenizedData[i].value)) newData.includes.heading = true
