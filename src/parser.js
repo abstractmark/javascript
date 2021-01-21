@@ -1,10 +1,12 @@
+// Replace all special characters with it's corresponding html entity
+const replaceSpecialCharacters = str => str.replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 // Parse typography inside every data(bold, italic, underline and strikethrough)
 const parseTypography = data => data
     .replace(/\*\*(.*?)\*\*/gim, "<b>$1</b>")
     .replace(/_(.*?)_/gim, "<i>$1</i>")
     .replace(/%(.*?)%/gim, "<u>$1</u>")
     .replace(/\~\~(.*)\~\~/gim, "<del>$1</del>")
-    .replace(/\`([^\`]+)\`/gim, "<code>$1</code>")
+    .replace(/\`([^\`]+)\`/gim, (_, code) => `<code>${replaceSpecialCharacters(code)}</code>`)
 
 const Parse = lexedData => {
     let parsedData = [];
@@ -42,7 +44,7 @@ const Parse = lexedData => {
                         if(lexedData[j].lastElement) endParagraph = true
                         break;
                     }else{
-                        newData.value += `${lexedData[j].value}<br />` // Add a <br> tag in the end of each line
+                        newData.value += `${replaceSpecialCharacters(lexedData[j].value)}<br />` // Add a <br> tag in the end of each line
                     }
                 }
                 paragraphValue.push(newData)
@@ -60,6 +62,11 @@ const Parse = lexedData => {
                     }
                     else newData.value += lexedData[i].value;
                 }
+                paragraphValue.push(newData)
+            }
+            else if(data.includes.horizontalRule){
+                newData.type = "plain"
+                newData.value = "<hr />"
                 paragraphValue.push(newData)
             }
             else if(data.includes.heading){
@@ -140,7 +147,7 @@ const Parse = lexedData => {
     //Gather all parsed information info html tags
     let parsedHtml = "";
     for(let i = 0; i< parsedData.length; i++){
-        parsedHtml += `<p>${toHTML(parsedData[i])}</p>`;
+        toHTML(parsedData[i])? parsedHtml += `<p>${toHTML(parsedData[i])}</p>`: null;
     }
     return {body: parsedHtml, head: parsedStyleTag};
 }

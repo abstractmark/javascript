@@ -11,7 +11,7 @@ Javascript implementation of abstractmark is on early development progress right
 - [x] Code
 - [ ] Class
 - [x] Heading, including heading id
-- [ ] Horizontal rule
+- [x] Horizontal rule
 - [ ] image
 - [ ] link
 - [x] Italic text
