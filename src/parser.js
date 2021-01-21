@@ -38,10 +38,27 @@ const Parse = lexedData => {
                     // Check if the line is a fenced code block close tag
                     if(lexedData[j].includes.fencedCodeBlock){
                         index = j;
+                        // Check if fenced code block close tag is also end of the file
+                        if(lexedData[j].lastElement) endParagraph = true
                         break;
                     }else{
                         newData.value += `${lexedData[j].value}<br />` // Add a <br> tag in the end of each line
                     }
+                }
+                paragraphValue.push(newData)
+            }
+            else if(data.includes.defineClass){
+                newData.type = "defineClass";
+                newData.value = "";
+                // Find the close tag of define class
+                for(let i = index + 1; i< lexedData.length; i++){
+                    if(lexedData[i].value === "---"){
+                        index = i;
+                        // Check if define class close tag is also end of the file
+                        if(lexedData[i].lastElement) endParagraph = true
+                        break;
+                    }
+                    else newData.value += lexedData[i].value;
                 }
                 paragraphValue.push(newData)
             }
@@ -70,6 +87,9 @@ const Parse = lexedData => {
                     }
                     //Remove unnecessary space form heading Id
                     newData.headingId = newData.headingId.trim()
+                }else{
+                    // Default heading id
+                    newData.headingId = newData.value.replace(/<\/?[^>]+(>|$)/g, "").replace(/ /g, '-').replace(/[^a-zA-Z0-6-]/g, '').toLowerCase().substring(0, 50)
                 }
                 //Push result to the variables
                 paragraphValue.push(newData)
@@ -88,15 +108,18 @@ const Parse = lexedData => {
             //Reset Variable to Default
             endParagraph = false
             //Push Pragraph information to parsedData
+            //console.log(paragraphValue)
             parsedData.push(paragraphValue)
             paragraphValue = []
         }
     }
+    //console.log(parsedData)
+    let parsedStyleTag = [];
     // Convert parsed data to HTML tags
     const toHTML = (data) => {
         let htmlData = ""
         for(let i = 0; i< data.length; i++){
-            // Check if whether it is a plain text, heading or fenced code block
+            // Check if whether it is a plain text, heading, fenced code block or define class
             if(data[i].type === "plain"){
                 // Add br tags if there is next line inside the paragraph
                 if(data[i + 1]) htmlData += `${data[i].value}<br />`
@@ -108,6 +131,8 @@ const Parse = lexedData => {
             }else if(data[i].type === "fencedCodeBlock"){
                 // Insert fenced code block value inside <code> and <pre> tags
                 htmlData += `<pre><code>${data[i].value}</code></pre>`
+            }else if(data[i].type === "defineClass"){
+                parsedStyleTag.push(data[i].value)
             }
         }
         return htmlData
@@ -115,9 +140,9 @@ const Parse = lexedData => {
     //Gather all parsed information info html tags
     let parsedHtml = "";
     for(let i = 0; i< parsedData.length; i++){
-        parsedHtml += `<p>${toHTML(parsedData[i])}</p>`
+        parsedHtml += `<p>${toHTML(parsedData[i])}</p>`;
     }
-    return parsedHtml;
+    return {body: parsedHtml, head: parsedStyleTag};
 }
 
 module.exports = { Parse }

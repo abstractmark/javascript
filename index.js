@@ -19,12 +19,32 @@ Abstractmark information options:
  --help .................. informations about AbstractMark CLI
 
 Abstractmark converting options:
- -open ................... Open html file in browser after finish converting.
+ -open ................... Open html file in browser after finish converting. 
+ -t, --tags .............. Convert to only HTML file which contains only corresponding tags. (Note that AbstractMark CLI converts to full HTML file as default)
+ -unstyled ............... Convert to only HTML tags without any style on it. // Not done yet
 `
 // Clear last line output on CLI.
 const CLEAR_LAST_LINE = () => {
   process.stdout.clearLine();
   process.stdout.cursorTo(0);
+}
+
+const CONVERT_STYLE_TAGS = styles => {
+  let styletags = ''
+  for(let i = 0; i< styles.length; i++){
+    styletags += `<style>${styles[i]}</style>`
+  }
+  return styletags
+}
+const CONVERT_TO_FULL_HTML = data => {
+  return `<!DOCTYPE html>\
+<html lang="en">\
+<head>\
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">\
+${CONVERT_STYLE_TAGS(data["head"])}\
+</head>\
+<body>${data["body"]}</body>\
+</html>`
 }
 
 const cli = () => {
@@ -46,8 +66,8 @@ const cli = () => {
         if(!(file.endsWith('.am') || file.endsWith('.abstractmark'))) throw new Error('\x1b[31mAbstractMark: only file with extension .am or .abstractmark is allowed\x1b[0m')
         // Read file data
         const fs = require('fs');
-        let data = fs.readFileSync(file, 'utf-8')
-        const tokenizedData = Tokenize(data)
+        let sourceData = fs.readFileSync(file, 'utf-8')
+        const tokenizedData = Tokenize(sourceData)
         const lexedData = Lex(tokenizedData)
         const parsedData = Parse(lexedData)
         // Write convert result into html file
@@ -58,7 +78,18 @@ const cli = () => {
         process.stdout.write('Converting...')
         // If user doesn't provide file name
         if(!htmlFileName) htmlFileName = `${file.split('.').shift()}.html`
-        fs.writeFile(htmlFileName, parsedData, (err) => {
+        // Check CLI args
+        let styled = true
+        let fullHtmlTags = true
+        for(let i = 1; i< args.length; i++){
+          if(args[i] === "-t" || args[i] === "--tags") fullHtmlTags = false
+          else if(args[i] === "-unstyled" || args[i] === "--unstyled") styled = false
+        }
+        let data;
+        if(fullHtmlTags) data = CONVERT_TO_FULL_HTML(parsedData)
+        else data = `${CONVERT_STYLE_TAGS(parsedData['head'])}${parsedData['body']}`
+        // Write converted data into file.
+        fs.writeFile(htmlFileName, data, (err) => {
           if(err) throw new Error(err)
           else{
             CLEAR_LAST_LINE()
