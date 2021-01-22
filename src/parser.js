@@ -171,12 +171,10 @@ const Parse = lexedData => {
             //Reset Variable to Default
             endParagraph = false
             //Push Pragraph information to parsedData
-            //console.log(paragraphValue)
             parsedData.push(paragraphValue)
             paragraphValue = []
         }
     }
-    //console.log(parsedData)
     let parsedStyleTag = [];
     // Convert parsed data to HTML tags
     const toHTML = (data) => {
@@ -192,7 +190,7 @@ const Parse = lexedData => {
                 // Insert fenced code block value inside <code> and <pre> tags
                 htmlData += `<pre ${data[i].className?`class="${data[i].className}"`:''} ${data[i].inlineStyle?`style="${data[i].inlineStyle}"`:""}><code>${data[i].value}</code></pre>`
             }else if(data[i].type === "defineClass"){
-                parsedStyleTag.push(data[i].value)
+                if(parsedStyleTag.indexOf(data[i].value) === -1) parsedStyleTag.push(data[i].value)
             }
         }
         return htmlData

@@ -3,6 +3,7 @@ const {Lex} = require('./src/lexer');
 const { Parse } = require('./src/parser');
 const {exec} = require('child_process');
 const version = require('./package.json').version;
+const DEFAULT_STYLE = require('./src/DEFAULT_STYLE')
 // Code for command line command
 
 const HELP_TEXT = `
@@ -85,6 +86,8 @@ const cli = () => {
           if(args[i] === "-t" || args[i] === "--tags") fullHtmlTags = false
           else if(args[i] === "-unstyled" || args[i] === "--unstyled") styled = false
         }
+        // Default css style
+        if(styled) parsedData['head'].push(DEFAULT_STYLE)
         let data;
         if(fullHtmlTags) data = CONVERT_TO_FULL_HTML(parsedData)
         else data = `${CONVERT_STYLE_TAGS(parsedData['head'])}${parsedData['body']}`
