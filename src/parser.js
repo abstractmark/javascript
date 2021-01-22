@@ -14,10 +14,12 @@ const checkClassUsage = data => {
         // Check whether the value contains '{!' and ends with '}'
         if(data.value[i] === "{" && data.value[i + 1] === "!"){
             // Temporary variable to remove class chars
-            let newValue = data.value.slice(0, i-1)
+            let newValue = data.value.slice(0, i)
             for(let j = i + 2; j< data.value.length; j++){
                 if(data.value[j] === "}"){
-                    data.value = newValue + data.value.slice(j + 1).trim()
+                    data.value = newValue + data.value.slice(j + 1)
+                    data.value = data.value.trim()
+                    data.className = data.className.trim()
                     break
                 }
                 else{
@@ -35,10 +37,11 @@ const parseInlineStyle = data => {
         // Check whether the value contains '{' and ends with '}' but it isn't heading id nor class
         if(data.value[i] === "{" && data.value[i + 1] !== "!" && data.value[i + 1] !== "#"){
             // temporary variable to remove style chars
-            let newValue = data.value.slice(0, i)
+            let newValue = data.value.slice(0, i - 1)
             for(let j = i + 1; j< data.value.length; j++){
                 if(data.value[j] === "}"){
                     data.value = newValue + data.value.slice(j + 1).trim()
+                    data.value = data.value.trim()
                     break;
                 }else data.inlineStyle += data.value[j]
             }
@@ -183,7 +186,7 @@ const Parse = lexedData => {
             // Check if whether it is a plain text, heading, fenced code block or define class
             if(data[i].type === "plain"){
                 // Add br tags if there is next line inside the paragraph and add class attribute if there is class usage
-                htmlData += `${data[i].className?`<span class="${data[i].className}" ${data[i].inlineStyle?`style="${data[i].inlineStyle}"`:""}>${data[i].value}<span>`:`${data[i].value}`}${data[i + 1]?"<br />":""}`
+                htmlData += `${data[i].className || data[i].inlineStyle?`<span ${data[i].className?`<class="${data[i].className}">`: ""} ${data[i].inlineStyle?`style="${data[i].inlineStyle}"`:""}>${data[i].value}</span>`:`${data[i].value}`}${data[i + 1] && data[i].value !== "<hr />"?"<br />":""}`
             }else if(data[i].type === "heading"){
                 htmlData += `<h${data[i].headingLevel} ${data[i].headingId?`id = "${data[i].headingId}`:""}" ${data[i].className?`class="${data[i].className}"`: ""} ${data[i].inlineStyle?`style="${data[i].inlineStyle}"`:""}>${data[i].value}</h${data[i].headingLevel}>`
             }else if(data[i].type === "fencedCodeBlock"){
@@ -198,8 +201,21 @@ const Parse = lexedData => {
     //Gather all parsed information info html tags
     let parsedHtml = "";
     for(let i = 0; i< parsedData.length; i++){
-        toHTML(parsedData[i])? parsedHtml += `<p>${toHTML(parsedData[i])}</p>`: null;
+        // Check if the paragraph don't need <p> tags
+        let needParagraphTag = false
+        for(let j = 0; j< parsedData[i].length; j++){
+            // No need <p> tag if there's no any plain text inside the paragraph
+            if(parsedData[i][j].type === "plain"){
+                if(parsedData[i][j].value === "<hr />" && parsedData[i].length === 1){
+                    needParagraphTag = false;
+                }else needParagraphTag = true
+                break
+            }
+        }
+        console.log(parsedData[i], needParagraphTag)
+        toHTML(parsedData[i])? !needParagraphTag? parsedHtml += toHTML(parsedData[i]) : parsedHtml += `<p>${toHTML(parsedData[i])}</p>`: null;
     }
+    console.log(parsedHtml)
     return {body: parsedHtml, head: parsedStyleTag};
 }
 
