@@ -11,7 +11,7 @@ const parseTypography = data => data
 const checkClassUsage = data => {
     data.className = ""
     for(let i = 0; i< data.value.length; i++){
-        // Check whether if a heading contains '{!' and ends with '}'
+        // Check whether the value contains '{!' and ends with '}'
         if(data.value[i] === "{" && data.value[i + 1] === "!"){
             // Temporary variable to remove class chars
             let newValue = data.value.slice(0, i-1)
@@ -26,6 +26,24 @@ const checkClassUsage = data => {
             }
         }
     };
+    return data;
+}
+
+const parseInlineStyle = data => {
+    data.inlineStyle = "";
+    for(let i = 0; i< data.value.length; i++){
+        // Check whether the value contains '{' and ends with '}' but it isn't heading id nor class
+        if(data.value[i] === "{" && data.value[i + 1] !== "!" && data.value[i + 1] !== "#"){
+            // temporary variable to remove style chars
+            let newValue = data.value.slice(0, i)
+            for(let j = i + 1; j< data.value.length; j++){
+                if(data.value[j] === "}"){
+                    data.value = newValue + data.value.slice(j + 1).trim()
+                    break;
+                }else data.inlineStyle += data.value[j]
+            }
+        }
+    }
     return data;
 }
 
@@ -51,12 +69,15 @@ const Parse = lexedData => {
             data.value = data.value.replace(/\\\%/g, '&percnt;')
             data.value = data.value.replace(/\\\_/g, '&UnderBar;')
             data.value = data.value.replace(/\\\`/g, '&#96;')
+            data.value = data.value.replace(/\\{`/g, '&#123;')
+            data.value = data.value.replace(/\\}`/g, '&#125;')
             // parse typography of the value
             data.value = parseTypography(data.value)
             // Checking the type of each data
             if(data.includes.fencedCodeBlock){
                 newData.type = "fencedCodeBlock";
-                newData = checkClassUsage(Object.assign({}, newData, {value: data.value}))
+                if(data.includes.classUsage) newData = checkClassUsage(Object.assign({}, newData, {value: data.value}))
+                if(data.includes.inlineStyle) newData = parseInlineStyle(newData)
                 newData.value = "";
                 for(let j = index + 1; j< lexedData.length; j++){
                     // Check if the line is a fenced code block close tag
@@ -105,7 +126,7 @@ const Parse = lexedData => {
                 if(data.includes.headingId){
                     newData.headingId = "";
                     for(let i = 0; i< data.value.length; i++){
-                        // Check whether if a heading contains '{#' and ends with '}'
+                        // Check whether the heading contains '{#' and ends with '}'
                         if(data.value[i] === "{" && data.value[i + 1] === "#"){
                             // Temporary variable to remove heading id chars
                             let newValue = newData.value.slice(0, i-newData.headingLevel-1)
@@ -121,9 +142,11 @@ const Parse = lexedData => {
                     //Remove unnecessary space form heading Id
                     newData.headingId = newData.headingId.trim()
                     if(data.includes.classUsage) newData = checkClassUsage(newData)
+                    if(data.includes.inlineStyle) newData = parseInlineStyle(newData)
                 }else{
                     // Class attribute
-                    newData = checkClassUsage(newData)
+                    if(data.includes.classUsage) newData = checkClassUsage(newData)
+                    if(data.includes.inlineStyle) newData = parseInlineStyle(newData)
                     // Default heading id
                     newData.headingId = newData.value.replace(/<\/?[^>]+(>|$)/g, "").replace(/ /g, '-').replace(/[^a-zA-Z0-6-]/g, '').toLowerCase().substring(0, 50)
                 }
@@ -131,10 +154,13 @@ const Parse = lexedData => {
                 paragraphValue.push(newData)
             }
             // Check if it is a plain text
-            else if(Object.values(data.includes).indexOf(true) === -1 || Object.values(data.includes).indexOf(true) === Object.keys(data.includes).indexOf("classUsage")){
+            else if(Object.values(data.includes).indexOf(true) === -1 || 
+            Object.values(data.includes).indexOf(true) === Object.keys(data.includes).indexOf("classUsage") ||
+            Object.values(data.includes).indexOf(true) === Object.keys(data.includes).indexOf("inlineStyle")){
                 newData.type = "plain"
                 newData.value = data.value
                 if(data.includes.classUsage) newData = checkClassUsage(newData)
+                if(data.includes.inlineStyle) newData = parseInlineStyle(newData)
                 paragraphValue.push(newData)
             }
             // Plain text
@@ -159,12 +185,12 @@ const Parse = lexedData => {
             // Check if whether it is a plain text, heading, fenced code block or define class
             if(data[i].type === "plain"){
                 // Add br tags if there is next line inside the paragraph and add class attribute if there is class usage
-                htmlData += `${data[i].className?`<span class="${data[i].className}">${data[i].value}<span>`:`${data[i].value}`}${data[i + 1]?"<br />":""}`
+                htmlData += `${data[i].className?`<span class="${data[i].className}" ${data[i].inlineStyle?`style="${data[i].inlineStyle}"`:""}>${data[i].value}<span>`:`${data[i].value}`}${data[i + 1]?"<br />":""}`
             }else if(data[i].type === "heading"){
-                htmlData += `<h${data[i].headingLevel} ${data[i].headingId?`id = "${data[i].headingId}`:""}" ${data[i].className?`class="${data[i].className}"`: ""}>${data[i].value}</h${data[i].headingLevel}>`
+                htmlData += `<h${data[i].headingLevel} ${data[i].headingId?`id = "${data[i].headingId}`:""}" ${data[i].className?`class="${data[i].className}"`: ""} ${data[i].inlineStyle?`style="${data[i].inlineStyle}"`:""}>${data[i].value}</h${data[i].headingLevel}>`
             }else if(data[i].type === "fencedCodeBlock"){
                 // Insert fenced code block value inside <code> and <pre> tags
-                htmlData += `<pre ${data[i].className?`class="${data[i].className}"`:''}><code>${data[i].value}</code></pre>`
+                htmlData += `<pre ${data[i].className?`class="${data[i].className}"`:''} ${data[i].inlineStyle?`style="${data[i].inlineStyle}"`:""}><code>${data[i].value}</code></pre>`
             }else if(data[i].type === "defineClass"){
                 parsedStyleTag.push(data[i].value)
             }
