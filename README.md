@@ -9,7 +9,7 @@ Javascript implementation of abstractmark is on early development progress right
 - [ ] Blockquote
 - [x] Bold text
 - [x] Code
-- [ ] Class
+- [x] Class
 - [x] Heading, including heading id
 - [x] Horizontal rule
 - [ ] image

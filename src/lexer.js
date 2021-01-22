@@ -32,7 +32,7 @@ const Lex = (tokenizedData) => {
         if(tokenizedData[i].value === "---") newData.includes.horizontalRule = true
         else newData.includes.horizontalRule = false
         // Check whether the line is a fenced code block
-        if(tokenizedData[i].value === "```") newData.includes.fencedCodeBlock = true
+        if(/^\`\`\`/.test(tokenizedData[i].value)) newData.includes.fencedCodeBlock = true
         else newData.includes.fencedCodeBlock = false
         // Check whether the line is Ordered List
         if(/^\d+\. ./.test(tokenizedData[i].value)) newData.includes.orderedList = true
