@@ -21,10 +21,7 @@ const checkClassUsage = data => {
                     data.value = data.value.trim()
                     data.className = data.className.trim()
                     break
-                }
-                else{
-                    data.className += data.value[j]
-                }
+                }else data.className += data.value[j]
             }
         }
     };
@@ -33,10 +30,10 @@ const checkClassUsage = data => {
 
 const parseInlineStyle = data => {
     data.inlineStyle = "";
-    for(let i = 0; i< data.value.length; i++){
+    for(let i = 0; i<data.value.length; i++){
         // Check whether the value contains '{' and ends with '}' but it isn't heading id nor class
         if(data.value[i] === "{" && data.value[i + 1] !== "!" && data.value[i + 1] !== "#"){
-            // temporary variable to remove style chars
+            // Temporary variable to remove style chars
             let newValue = data.value.slice(0, i - 1)
             for(let j = i + 1; j< data.value.length; j++){
                 if(data.value[j] === "}"){
@@ -56,7 +53,7 @@ const Parse = lexedData => {
     let endParagraph = false;
     let paragraphValue = [];
     // First, split lexed Data by paragraph
-    for(let index = 0; index< lexedData.length; index++){
+    for(let index = 0; index<lexedData.length; index++){
         let data = lexedData[index];
         if(data.value === "" && endParagraph) endParagraph = false;
         else if(data.value === "" && !endParagraph) endParagraph = true;
@@ -74,8 +71,11 @@ const Parse = lexedData => {
             data.value = data.value.replace(/\\\`/g, '&#96;')
             data.value = data.value.replace(/\\{`/g, '&#123;')
             data.value = data.value.replace(/\\}`/g, '&#125;')
-            // parse typography of the value
-            data.value = parseTypography(data.value)
+            
+            // parse typography of the value except for link and image
+            if(!data.includes.image && !data.includes.link){
+                data.value = parseTypography(data.value)
+            }
             // Checking the type of each data
             if(data.includes.fencedCodeBlock){
                 newData.type = "fencedCodeBlock";
@@ -89,11 +89,8 @@ const Parse = lexedData => {
                         // Check if fenced code block close tag is also end of the file
                         if(lexedData[j].lastElement) endParagraph = true
                         break;
-                    }else{
-                        newData.value += `${replaceSpecialCharacters(lexedData[j].value)}<br />` // Add a <br> tag in the end of each line
-                    }
+                    }else newData.value += `${replaceSpecialCharacters(lexedData[j].value)}<br />` // Add a <br> tag in the end of each line
                 }
-                paragraphValue.push(newData)
             }
             else if(data.includes.defineClass){
                 newData.type = "defineClass";
@@ -108,12 +105,36 @@ const Parse = lexedData => {
                     }
                     else newData.value += lexedData[i].value;
                 }
-                paragraphValue.push(newData)
             }
             else if(data.includes.horizontalRule){
                 newData.type = "plain"
                 newData.value = "<hr />"
-                paragraphValue.push(newData)
+            }
+            else if(data.includes.image){
+                newData.type = "image"
+                newData.value = data.value
+                if(data.includes.classUsage) newData = checkClassUsage(newData)
+                if(data.includes.inlineStyle) newData = parseInlineStyle(newData)
+                newData.altText = "";
+                newData.imageSrc = "";
+                for(let i = 0; i< newData.value.length; i++){
+                    //Check whether if it started with ![
+                    if(newData.value[i] === "!" && newData.value[i + 1] === "["){
+                        for(let j = i + 2; j< newData.value.length; j++){
+                            //Break the loop if it is ended with ]
+                            if(newData.value[j] === "]"){
+                                i = j;
+                                break;
+                            }else newData.altText += newData.value[j] //Otherwise save it as Alt text
+                        }
+                    }else if(newData.value[i] === "("){
+                        for(let j = i + 1; j< newData.value.length; j++){
+                            if(newData.value[j] === ")"){
+                                break;
+                            }else newData.imageSrc += newData.value[j] //Get image source
+                        }
+                    }
+                }
             }
             else if(data.includes.heading){
                 newData.type = "heading";
@@ -153,8 +174,6 @@ const Parse = lexedData => {
                     // Default heading id
                     newData.headingId = newData.value.replace(/<\/?[^>]+(>|$)/g, "").replace(/ /g, '-').replace(/[^a-zA-Z0-6-]/g, '').toLowerCase().substring(0, 50)
                 }
-                //Push result to the variables
-                paragraphValue.push(newData)
             }
             // Check if it is a plain text
             else if(Object.values(data.includes).indexOf(true) === -1 || 
@@ -164,10 +183,11 @@ const Parse = lexedData => {
                 newData.value = data.value
                 if(data.includes.classUsage) newData = checkClassUsage(newData)
                 if(data.includes.inlineStyle) newData = parseInlineStyle(newData)
-                paragraphValue.push(newData)
             }
             // Plain text
             else paragraphValue.push(data)
+            // Push new data
+            paragraphValue.push(newData)
         }
         // If it's the end of paragraph or it's end of the file
         if(endParagraph || data.lastElement){
@@ -179,21 +199,27 @@ const Parse = lexedData => {
         }
     }
     let parsedStyleTag = [];
+    
+    // Add class attribute and style attribute if there is
+    const parseStyleAndClassAtribute = data => `${data.className?`class="${data.className}"`:''} ${data.inlineStyle?`style="${data.inlineStyle}"`:''}`
+
     // Convert parsed data to HTML tags
-    const toHTML = (data) => {
+    const toHTML = data => {
         let htmlData = ""
         for(let i = 0; i< data.length; i++){
             // Check if whether it is a plain text, heading, fenced code block or define class
             if(data[i].type === "plain"){
-                // Add br tags if there is next line inside the paragraph and add class attribute if there is class usage
-                htmlData += `${data[i].className || data[i].inlineStyle?`<span ${data[i].className?`<class="${data[i].className}">`: ""} ${data[i].inlineStyle?`style="${data[i].inlineStyle}"`:""}>${data[i].value}</span>`:`${data[i].value}`}${data[i + 1] && data[i].value !== "<hr />"?"<br />":""}`
+                // Add br tags if there is next line and the current line is not horizontal rule inside the paragraph
+                htmlData += `${data[i].className || data[i].inlineStyle?`<span ${parseStyleAndClassAtribute(data[i])}>${data[i].value}</span>`:`${data[i].value}`}${data[i + 1] && data[i].value !== "<hr />"?"<br />":""}`
             }else if(data[i].type === "heading"){
-                htmlData += `<h${data[i].headingLevel} ${data[i].headingId?`id = "${data[i].headingId}`:""}" ${data[i].className?`class="${data[i].className}"`: ""} ${data[i].inlineStyle?`style="${data[i].inlineStyle}"`:""}>${data[i].value}</h${data[i].headingLevel}>`
+                htmlData += `<h${data[i].headingLevel} ${data[i].headingId?`id = "${data[i].headingId}`:""}" ${parseStyleAndClassAtribute(data[i])}>${data[i].value}</h${data[i].headingLevel}>`
             }else if(data[i].type === "fencedCodeBlock"){
                 // Insert fenced code block value inside <code> and <pre> tags
-                htmlData += `<pre ${data[i].className?`class="${data[i].className}"`:''} ${data[i].inlineStyle?`style="${data[i].inlineStyle}"`:""}><code>${data[i].value}</code></pre>`
+                htmlData += `<pre ${parseStyleAndClassAtribute(data[i])}><code>${data[i].value}</code></pre>`
             }else if(data[i].type === "defineClass"){
                 if(parsedStyleTag.indexOf(data[i].value) === -1) parsedStyleTag.push(data[i].value)
+            }else if(data[i].type === "image"){
+                htmlData += `<img ${data[i].imageSrc?`src="${data[i].imageSrc}"`:""} alt = ${data[i].altText?`alt="${data[i].altText}"`:""} ${parseStyleAndClassAtribute(data[i])} />`
             }
         }
         return htmlData
@@ -212,10 +238,9 @@ const Parse = lexedData => {
                 break
             }
         }
-        console.log(parsedData[i], needParagraphTag)
         toHTML(parsedData[i])? !needParagraphTag? parsedHtml += toHTML(parsedData[i]) : parsedHtml += `<p>${toHTML(parsedData[i])}</p>`: null;
     }
-    console.log(parsedHtml)
+    //console.log(parsedHtml)
     return {body: parsedHtml, head: parsedStyleTag};
 }
 

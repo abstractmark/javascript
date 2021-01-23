@@ -97,6 +97,12 @@ a::selection {
     background: rgba(255, 255, 0, 0.3);
     color: #0645ad;
 }
+blockquote {
+    color: #666666;
+    margin: 0;
+    padding-left: 2.5em;
+    border-left: 0.5em #cccccc solid;
+}
 `.replace(/(\r\n|\n|\r)/g, '')// Remove all whitespace
 
 module.exports =  DEFAULT_STYLE;
