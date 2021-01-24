@@ -47,6 +47,9 @@ const parseInlineStyle = data => {
     return data;
 }
 
+// Add class attribute and style attribute to element
+const parseStyleAndClassAtribute = data => `${data.className?`class="${data.className}"`:''} ${data.inlineStyle?`style="${data.inlineStyle}"`:''}`
+
 const Parse = lexedData => {
     let parsedData = [];
     // Assign Paragraph Variable
@@ -109,6 +112,54 @@ const Parse = lexedData => {
             else if(data.includes.horizontalRule){
                 newData.type = "plain"
                 newData.value = "<hr />"
+            }
+            else if(data.includes.blockquote){
+                newData.type = "blockquote";
+                newData.value = [];
+                // Check if it's followed by blockquote
+                for(let i = index; i< lexedData.length; i++){
+                    // End the loop if it's not followed by blockquote
+                    if(!lexedData[i].includes.blockquote){
+                        index = i;
+                        break;
+                    }else{
+                        let blockquoteDepthLevel = 0;
+                        let trimmedValue = ""
+                        // Check blockquote's depth level and remove blockquote syntax from blockquote value
+                        for(let j = 0; j< lexedData[i].value.length; j++){
+                            // Check blockquote's syntax
+                            if(lexedData[i].value[j] === ">") blockquoteDepthLevel++
+                            else{
+                                trimmedValue = lexedData[i].value.slice(blockquoteDepthLevel).trim()
+                                break;
+                            }        
+                        }
+                        let blockquoteData = {value: trimmedValue, blockquoteDepthLevel}
+                        // Get style and class information about the blockquote
+                        if(lexedData[i].includes.classUsage) blockquoteData = checkClassUsage(blockquoteData)
+                        if(lexedData[i].includes.inlineStyle) blockquoteData = parseInlineStyle(blockquoteData)
+                        // Push the data
+                        newData.value.push(blockquoteData)
+                    }
+                }
+                // A recursive function to parse blockquote and it's children to html tags
+                const parseDescendants = (parent, data, index) => {
+                    let result = ""
+                    for(let i = index; i< data.value.length; i++){
+                        // Break when meet a blockquote with the same depth level and it's index is higher than parent index
+                        if(parent === data.value[i].blockquoteDepthLevel && i !== index) break
+                        // If the blockquote depth level is same as parent depth level + 1
+                        if(parent + 1 === data.value[i].blockquoteDepthLevel){
+                            // If it's not an empty string
+                            if(parseDescendants(parent + 1, data, i).length){
+                                result += `<blockquote ${parseStyleAndClassAtribute(data.value[i])}>${data.value[i].value}${parseDescendants(parent +1, data, i)}</blockquote>`
+                            }
+                            else result += `<blockquote ${parseStyleAndClassAtribute(data.value[i])}>${data.value[i].value}</blockquote>`
+                        }
+                    }
+                    return result;
+                }
+                newData.value = parseDescendants(0, newData, 0)
             }
             else if(data.includes.image){
                 newData.type = "image"
@@ -199,16 +250,14 @@ const Parse = lexedData => {
         }
     }
     let parsedStyleTag = [];
-    
-    // Add class attribute and style attribute if there is
-    const parseStyleAndClassAtribute = data => `${data.className?`class="${data.className}"`:''} ${data.inlineStyle?`style="${data.inlineStyle}"`:''}`
 
     // Convert parsed data to HTML tags
     const toHTML = data => {
         let htmlData = ""
         for(let i = 0; i< data.length; i++){
-            // Check if whether it is a plain text, heading, fenced code block or define class
-            if(data[i].type === "plain"){
+            // Check if whether it is a plain text, heading, fenced code block or others
+            // Blockquote will be treated like plain text
+            if(data[i].type === "plain" || data[i].type === "blockquote"){
                 // Add br tags if there is next line and the current line is not horizontal rule inside the paragraph
                 htmlData += `${data[i].className || data[i].inlineStyle?`<span ${parseStyleAndClassAtribute(data[i])}>${data[i].value}</span>`:`${data[i].value}`}${data[i + 1] && data[i].value !== "<hr />"?"<br />":""}`
             }else if(data[i].type === "heading"){
@@ -219,7 +268,7 @@ const Parse = lexedData => {
             }else if(data[i].type === "defineClass"){
                 if(parsedStyleTag.indexOf(data[i].value) === -1) parsedStyleTag.push(data[i].value)
             }else if(data[i].type === "image"){
-                htmlData += `<img ${data[i].imageSrc?`src="${data[i].imageSrc}"`:""} alt = ${data[i].altText?`alt="${data[i].altText}"`:""} ${parseStyleAndClassAtribute(data[i])} />`
+                htmlData += `<img ${data[i].imageSrc?`src="${data[i].imageSrc}"`:""} ${data[i].altText?`alt="${data[i].altText}"`:""} ${parseStyleAndClassAtribute(data[i])} />`
             }
         }
         return htmlData
@@ -240,7 +289,6 @@ const Parse = lexedData => {
         }
         toHTML(parsedData[i])? !needParagraphTag? parsedHtml += toHTML(parsedData[i]) : parsedHtml += `<p>${toHTML(parsedData[i])}</p>`: null;
     }
-    //console.log(parsedHtml)
     return {body: parsedHtml, head: parsedStyleTag};
 }
 

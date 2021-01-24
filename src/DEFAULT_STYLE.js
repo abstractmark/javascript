@@ -100,8 +100,9 @@ a::selection {
 blockquote {
     color: #666666;
     margin: 0;
-    padding-left: 2.5em;
+    padding-left: 1.8em;
     border-left: 0.5em #cccccc solid;
+    line-height: 2em;
 }
 `.replace(/(\r\n|\n|\r)/g, '')// Remove all whitespace
 
