@@ -119,10 +119,8 @@ const Parse = lexedData => {
                 // Check if it's followed by blockquote
                 for(let i = index; i< lexedData.length; i++){
                     // End the loop if it's not followed by blockquote
-                    if(!lexedData[i].includes.blockquote){
-                        index = i;
-                        break;
-                    }else{
+                    if(!lexedData[i].includes.blockquote){ index = i; break; }
+                    else{
                         let blockquoteDepthLevel = 0;
                         let trimmedValue = ""
                         // Check blockquote's depth level and remove blockquote syntax from blockquote value
@@ -277,18 +275,35 @@ const Parse = lexedData => {
     let parsedHtml = "";
     for(let i = 0; i< parsedData.length; i++){
         // Check if the paragraph don't need <p> tags
-        let needParagraphTag = false
+        let needParagraphTag = false;
+        let needDivisonTag = false
         for(let j = 0; j< parsedData[i].length; j++){
+            if(parsedData[i][j].type === "heading"){
+                needParagraphTag = false;
+                needDivisonTag = true
+                break;
+            }
+            // If it's HTML element
+            else if(/<\/?[a-z][\s\S]*>/i.test(parsedData[i][j].value)){
+                needParagraphTag = false;
+                break
+            }
+            // No need <p> tag if it's blockquote text
+            else if(parsedData[i][j].type === "blockquote"){
+                needParagraphTag = false;
+                break
+            }
             // No need <p> tag if there's no any plain text inside the paragraph
-            if(parsedData[i][j].type === "plain"){
+            else if(parsedData[i][j].type === "plain"){
                 if(parsedData[i][j].value === "<hr />" && parsedData[i].length === 1){
                     needParagraphTag = false;
                 }else needParagraphTag = true
                 break
             }
         }
-        toHTML(parsedData[i])? !needParagraphTag? parsedHtml += toHTML(parsedData[i]) : parsedHtml += `<p>${toHTML(parsedData[i])}</p>`: null;
+        toHTML(parsedData[i])? !needParagraphTag? needDivisonTag? parsedHtml += `<div>${toHTML(parsedData[i])}</div>` : parsedHtml += toHTML(parsedData[i]) : parsedHtml += `<p>${toHTML(parsedData[i])}</p>`: null;
     }
+    console.log(parsedHtml)
     return {body: parsedHtml, head: parsedStyleTag};
 }
 

@@ -19,5 +19,8 @@
   "bugs": {
     "url": "https://github.com/abstractmark/javascript/issues"
   },
-  "homepage": "https://github.com/abstractmark/javascript#readme"
+  "homepage": "https://github.com/abstractmark/javascript#readme",
+  "dependencies": {
+    "open": "^7.3.1"
+  }
 }

@@ -1,7 +1,7 @@
 const {Tokenize} = require('./src/tokenizer');
 const {Lex} = require('./src/lexer');
 const { Parse } = require('./src/parser');
-const {exec} = require('child_process');
+const open = require('open')
 const version = require('./package.json').version;
 const DEFAULT_STYLE = require('./src/DEFAULT_STYLE')
 // Code for command line command
@@ -78,7 +78,7 @@ const cli = () => {
         }
         process.stdout.write('Converting...')
         // If user doesn't provide file name
-        if(!htmlFileName) htmlFileName = `${file.split('.').shift()}.html`
+        if(!htmlFileName) htmlFileName = `${file.split('.').slice(0, -1).join('.')}.html`
         // Check CLI args
         let styled = true
         let fullHtmlTags = true
@@ -100,9 +100,11 @@ const cli = () => {
             for(let i = 1; i< args.length; i++){
               if(args[i] === "-open"){
                 process.stdout.write(`Opening ${htmlFileName} on your browser.`)
-                exec(htmlFileName);
-                CLEAR_LAST_LINE()
-                process.stdout.write(`Opened ${htmlFileName} on your browser.\n`)
+                // Open Converted file using "open" module
+                open(htmlFileName).then(() => {
+                  CLEAR_LAST_LINE()
+                  process.stdout.write(`Opened ${htmlFileName} on your browser.\n`)
+                })
               }
             }
           }
