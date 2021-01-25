@@ -17,7 +17,7 @@ const Lex = (tokenizedData) => {
         if(/!\[[^\]]*\]\((.*?)\s*("(?:.*[^"])")?\s*\)/.test(tokenizedData[i].value)) newData.includes.image = true
         else newData.includes.image = false
         // Check whether the line contains link
-        if(/^((?!\!))\[.+\]\(.+\)/.test(tokenizedData[i].value)) newData.includes.link = true
+        if(/(?<!\!)\[.+\]\(.+\)/.test(tokenizedData[i].value)) newData.includes.link = true
         else newData.includes.link = false
         // Check whether the line contains table
         if(/\|(.*?)\|/.test(tokenizedData[i].value)) newData.includes.table = true

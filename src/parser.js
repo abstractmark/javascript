@@ -47,6 +47,47 @@ const parseInlineStyle = data => {
     return data;
 }
 
+// A recurstion function to parse all link syntax
+const parseLink = data => {
+    let newData = "";
+    let text = ""
+    let url = ""
+    // Checking for the syntax of link
+    for(let i = 0; i< data.length; i++){
+        if(data[i] === "["){
+            // Finding the end of the text
+            for(let j = i + 1; j< data.length; j++){
+                if(data[j] === "]" && data[j + 1] === "("){
+                    i = j
+                    break
+                }else{
+                    text += data[j]
+                }
+            }
+        // Parsing the URL
+        }else if(data[i] === "(" && data[i - 1] === "]"){
+            for(let j = i + 1; j< data.length; j++){
+                if(data[j] === ")"){
+                    newData += `<a href="${url}">${text}</a>`;
+                    i = data.length;
+                    // Add others text into new data
+                    for(let k = j + 1; k< data.length; k++){
+                        newData += data[k]
+                    }
+                    // Call this function again to parse all link
+                    while(/(?<!\!)\[.+\]\(.+\)/.test(newData)) newData = parseLink(newData)
+                    break
+                }else{
+                    url += data[j]
+                }
+            }
+        }else{
+            newData += data[i]
+        }
+    }
+    return newData
+}
+
 // Add class attribute and style attribute to element
 const parseStyleAndClassAtribute = data => `${data.className?`class="${data.className}"`:''} ${data.inlineStyle?`style="${data.inlineStyle}"`:''}`
 
@@ -72,8 +113,12 @@ const Parse = lexedData => {
             data.value = data.value.replace(/\\\%/g, '&percnt;')
             data.value = data.value.replace(/\\\_/g, '&UnderBar;')
             data.value = data.value.replace(/\\\`/g, '&#96;')
-            data.value = data.value.replace(/\\{`/g, '&#123;')
-            data.value = data.value.replace(/\\}`/g, '&#125;')
+            data.value = data.value.replace(/\\\{/g, '&#123;')
+            data.value = data.value.replace(/\\\}/g, '&#125;')
+            data.value = data.value.replace(/\\\[/g, '&lbrack;')
+            data.value = data.value.replace(/\\\(/g, '&lpar;')
+            data.value = data.value.replace(/\\\)/g, '&rpar;')
+            data.value = data.value.replace(/\\\\/g, '&bsol;')
             
             // parse typography of the value except for link and image
             if(!data.includes.image && !data.includes.link){
@@ -227,11 +272,14 @@ const Parse = lexedData => {
             // Check if it is a plain text
             else if(Object.values(data.includes).indexOf(true) === -1 || 
             Object.values(data.includes).indexOf(true) === Object.keys(data.includes).indexOf("classUsage") ||
-            Object.values(data.includes).indexOf(true) === Object.keys(data.includes).indexOf("inlineStyle")){
+            Object.values(data.includes).indexOf(true) === Object.keys(data.includes).indexOf("inlineStyle") ||
+            Object.values(data.includes).indexOf(true) === Object.keys(data.includes).indexOf("link")){
                 newData.type = "plain"
                 newData.value = data.value
                 if(data.includes.classUsage) newData = checkClassUsage(newData)
                 if(data.includes.inlineStyle) newData = parseInlineStyle(newData)
+                if(data.includes.link) newData.value = parseLink(newData.value)
+                console.log(newData)
             }
             // Plain text
             else paragraphValue.push(data)
@@ -280,30 +328,28 @@ const Parse = lexedData => {
         for(let j = 0; j< parsedData[i].length; j++){
             if(parsedData[i][j].type === "heading"){
                 needParagraphTag = false;
-                needDivisonTag = true
-                break;
-            }
-            // If it's HTML element
-            else if(/<\/?[a-z][\s\S]*>/i.test(parsedData[i][j].value)){
-                needParagraphTag = false;
+                needDivisonTag = true;
                 break
+            }
+            // If it's HTML element but not <a> tag
+            else if(/<\/?[a-z][\s\S]*>/i.test(parsedData[i][j].value) && /<a>/i.test(parsedData[i][j].value)){
+                needParagraphTag = false;
             }
             // No need <p> tag if it's blockquote text
             else if(parsedData[i][j].type === "blockquote"){
                 needParagraphTag = false;
-                break
             }
             // No need <p> tag if there's no any plain text inside the paragraph
             else if(parsedData[i][j].type === "plain"){
+                console.log(parsedData[i][j])
                 if(parsedData[i][j].value === "<hr />" && parsedData[i].length === 1){
                     needParagraphTag = false;
                 }else needParagraphTag = true
-                break
             }
         }
         toHTML(parsedData[i])? !needParagraphTag? needDivisonTag? parsedHtml += `<div>${toHTML(parsedData[i])}</div>` : parsedHtml += toHTML(parsedData[i]) : parsedHtml += `<p>${toHTML(parsedData[i])}</p>`: null;
     }
-    console.log(parsedHtml)
+    //console.log(parsedHtml)
     return {body: parsedHtml, head: parsedStyleTag};
 }
 
