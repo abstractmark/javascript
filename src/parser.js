@@ -34,7 +34,7 @@ const parseInlineStyle = data => {
         // Check whether the value contains '{' and ends with '}' but it isn't heading id nor class
         if(data.value[i] === "{" && data.value[i + 1] !== "!" && data.value[i + 1] !== "#"){
             // Temporary variable to remove style chars
-            let newValue = data.value.slice(0, i - 1)
+            let newValue = data.value.slice(0, i)
             for(let j = i + 1; j< data.value.length; j++){
                 if(data.value[j] === "}"){
                     data.value = newValue + data.value.slice(j + 1).trim()
@@ -91,6 +91,26 @@ const parseLink = data => {
 // Add class attribute and style attribute to element
 const parseStyleAndClassAtribute = data => `${data.className?`class="${data.className}"`:''} ${data.inlineStyle?`style="${data.inlineStyle}"`:''}`
 
+// Replace all escape characters to it's html entities
+const escapeCharacters = data => {
+    data = data.replace(/\\\*/g, '&ast;')
+    data = data.replace(/\\\&/g, '&amp;')
+    data = data.replace(/\\\</g, '&lt;')
+    data = data.replace(/\\\>/g, '&gt;')
+    data = data.replace(/\\\"/g, '&quot;')
+    data = data.replace(/\\\'/g, '&#39;')
+    data = data.replace(/\\\%/g, '&percnt;')
+    data = data.replace(/\\\_/g, '&UnderBar;')
+    data = data.replace(/\\\`/g, '&#96;')
+    data = data.replace(/\\\{/g, '&#123;')
+    data = data.replace(/\\\}/g, '&#125;')
+    data = data.replace(/\\\[/g, '&lbrack;')
+    data = data.replace(/\\\(/g, '&lpar;')
+    data = data.replace(/\\\)/g, '&rpar;')
+    data = data.replace(/\\\\/g, '&bsol;')
+    return data
+}
+
 const Parse = lexedData => {
     let parsedData = [];
     // Assign Paragraph Variable
@@ -103,23 +123,7 @@ const Parse = lexedData => {
         else if(data.value === "" && !endParagraph) endParagraph = true;
         else{
             let newData = {};
-            // Replace all escape characters to it's html entities
-            data.value = data.value.replace(/\\\*/g, '&ast;')
-            data.value = data.value.replace(/\\\&/g, '&amp;')
-            data.value = data.value.replace(/\\\</g, '&lt;')
-            data.value = data.value.replace(/\\\>/g, '&gt;')
-            data.value = data.value.replace(/\\\"/g, '&quot;')
-            data.value = data.value.replace(/\\\'/g, '&#39;')
-            data.value = data.value.replace(/\\\%/g, '&percnt;')
-            data.value = data.value.replace(/\\\_/g, '&UnderBar;')
-            data.value = data.value.replace(/\\\`/g, '&#96;')
-            data.value = data.value.replace(/\\\{/g, '&#123;')
-            data.value = data.value.replace(/\\\}/g, '&#125;')
-            data.value = data.value.replace(/\\\[/g, '&lbrack;')
-            data.value = data.value.replace(/\\\(/g, '&lpar;')
-            data.value = data.value.replace(/\\\)/g, '&rpar;')
-            data.value = data.value.replace(/\\\\/g, '&bsol;')
-            
+            data.value = escapeCharacters(data.value)
             // parse typography of the value except for link and image
             if(!data.includes.image && !data.includes.link){
                 data.value = parseTypography(data.value)
@@ -158,6 +162,76 @@ const Parse = lexedData => {
                 newData.type = "plain"
                 newData.value = "<hr />"
             }
+            else if(data.includes.unorderedList){
+                newData.type = "unorderedList";
+                newData.value = [];
+                // Getting all unordered list children
+                for(let i = index; i< lexedData.length; i ++){
+                    if(!lexedData[i].includes.unorderedList && !lexedData[i].hasTab){
+                        index = i;
+                        break;
+                    }
+                    else{
+                        newData.value.push(lexedData[i])
+                    }
+                }
+                // A recursive function to parse all Unordered List descendants
+                const parseDescendants = (data, index, parentTabs) => {
+                    let result = []
+                    for(let i = index; i< data.length; i++){
+                        // Break the loop if it meets the next same-level unordered list
+                        if(data[i].totalTabs === parentTabs && i !== index) break;
+                        // Checking if a unordered list is descendant of the unordered list
+                        if(data[i].totalTabs === parentTabs + 1){
+                            // Checking if it's returning not empty array
+                            if(parseDescendants(data, i, data[i].totalTabs).length){
+                                result.push(Object.assign({}, data[i], {descendants: parseDescendants(data, i, data[i].totalTabs)}))
+                            }else result.push(data[i])
+                        }
+                    }
+                    return result
+                }
+                // A recursive function to merge descendants parsed from parseDescendants function
+                const mergeDescendants = data => {
+                    let result = "<ul>";
+                    for(let i = 0; i< data.length; i++){
+                        // If the line is new list
+                        if(data[i].includes.unorderedList){
+                            // Remove list syntax and returning it's value 
+                            let value = data[i].value.substr(2);
+                            value = parseTypography(value)
+                            value = escapeCharacters(value)
+                            // Checking class usage
+                            let className = checkClassUsage({value})
+                            value = className.value
+                            className = className.className
+                            // Checking inline style
+                            let inlineStyle = parseInlineStyle({value})
+                            value = inlineStyle.value
+                            inlineStyle = inlineStyle.inlineStyle
+                            // Add the <li> tag into result and calling this function again
+                            result += `<li${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}>${value}</li>`
+                        }else{
+                            let value = data[i].value;
+                            value = parseTypography(value)
+                            value = escapeCharacters(value)
+                            let className = checkClassUsage({value})
+                            // Checking class usage
+                            value = className.value
+                            className = className.className
+                            let inlineStyle = parseInlineStyle({value})
+                            // Checking inline style
+                            value = inlineStyle.value
+                            inlineStyle = inlineStyle.inlineStyle
+                            // Add the <p> tag into result and calling this function again
+                            result += `<p${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}>${value}</p>`
+                        }
+                        if(data[i].descendants) result += mergeDescendants(data[i].descendants)
+                    }
+                    return result + "</ul>";
+                }
+                newData.value = mergeDescendants(parseDescendants(newData.value, 0, -1))
+            }
             else if(data.includes.blockquote){
                 newData.type = "blockquote";
                 newData.value = [];
@@ -181,6 +255,7 @@ const Parse = lexedData => {
                         // Get style and class information about the blockquote
                         if(lexedData[i].includes.classUsage) blockquoteData = checkClassUsage(blockquoteData)
                         if(lexedData[i].includes.inlineStyle) blockquoteData = parseInlineStyle(blockquoteData)
+                        if(lexedData[i].includes.link) blockquoteData.value = parseLink(blockquoteData.value)
                         // Push the data
                         newData.value.push(blockquoteData)
                     }
@@ -261,10 +336,12 @@ const Parse = lexedData => {
                     newData.headingId = newData.headingId.trim()
                     if(data.includes.classUsage) newData = checkClassUsage(newData)
                     if(data.includes.inlineStyle) newData = parseInlineStyle(newData)
+                    if(data.includes.link) newData.value = parseLink(newData.value)
                 }else{
                     // Class attribute
                     if(data.includes.classUsage) newData = checkClassUsage(newData)
                     if(data.includes.inlineStyle) newData = parseInlineStyle(newData)
+                    if(data.includes.link) newData.value = parseLink(newData.value)
                     // Default heading id
                     newData.headingId = newData.value.replace(/<\/?[^>]+(>|$)/g, "").replace(/ /g, '-').replace(/[^a-zA-Z0-6-]/g, '').toLowerCase().substring(0, 50)
                 }
@@ -279,7 +356,6 @@ const Parse = lexedData => {
                 if(data.includes.classUsage) newData = checkClassUsage(newData)
                 if(data.includes.inlineStyle) newData = parseInlineStyle(newData)
                 if(data.includes.link) newData.value = parseLink(newData.value)
-                console.log(newData)
             }
             // Plain text
             else paragraphValue.push(data)
@@ -303,7 +379,7 @@ const Parse = lexedData => {
         for(let i = 0; i< data.length; i++){
             // Check if whether it is a plain text, heading, fenced code block or others
             // Blockquote will be treated like plain text
-            if(data[i].type === "plain" || data[i].type === "blockquote"){
+            if(data[i].type === "plain" || data[i].type === "blockquote" || data[i].type === "unorderedList"){
                 // Add br tags if there is next line and the current line is not horizontal rule inside the paragraph
                 htmlData += `${data[i].className || data[i].inlineStyle?`<span ${parseStyleAndClassAtribute(data[i])}>${data[i].value}</span>`:`${data[i].value}`}${data[i + 1] && data[i].value !== "<hr />"?"<br />":""}`
             }else if(data[i].type === "heading"){
@@ -341,7 +417,6 @@ const Parse = lexedData => {
             }
             // No need <p> tag if there's no any plain text inside the paragraph
             else if(parsedData[i][j].type === "plain"){
-                console.log(parsedData[i][j])
                 if(parsedData[i][j].value === "<hr />" && parsedData[i].length === 1){
                     needParagraphTag = false;
                 }else needParagraphTag = true
@@ -349,7 +424,6 @@ const Parse = lexedData => {
         }
         toHTML(parsedData[i])? !needParagraphTag? needDivisonTag? parsedHtml += `<div>${toHTML(parsedData[i])}</div>` : parsedHtml += toHTML(parsedData[i]) : parsedHtml += `<p>${toHTML(parsedData[i])}</p>`: null;
     }
-    //console.log(parsedHtml)
     return {body: parsedHtml, head: parsedStyleTag};
 }
 

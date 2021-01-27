@@ -22,7 +22,7 @@ Abstractmark information options:
 Abstractmark converting options:
  -open ................... Open html file in browser after finish converting. 
  -t, --tags .............. Convert to only HTML file which contains only corresponding tags. (Note that AbstractMark CLI converts to full HTML file as default)
- -unstyled ............... Convert to only HTML tags without any style on it. // Not done yet
+ -unstyled ............... Convert to only HTML tags without any style on it.
 `
 // Clear last line output on CLI.
 const CLEAR_LAST_LINE = () => {

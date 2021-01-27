@@ -38,7 +38,7 @@ const Lex = (tokenizedData) => {
         if(/^\d+\. ./.test(tokenizedData[i].value)) newData.includes.orderedList = true
         else newData.includes.orderedList = false
         // Check whether the line is Unordered List
-        if(/^- (.?!\[[xX ]\])/.test(tokenizedData[i].value)) newData.includes.unorderedList = true
+        if(/^- ((?!\[[xX ]\]).)*$/.test(tokenizedData[i].value)) newData.includes.unorderedList = true
         else newData.includes.unorderedList = false
         // Check whether the line is heading
         if(/^#{1,6} ./.test(tokenizedData[i].value)) newData.includes.heading = true
