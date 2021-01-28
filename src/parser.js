@@ -111,6 +111,132 @@ const escapeCharacters = data => {
     return data
 }
 
+const parseBlockquote = (lexedData, index) => {
+    // index used to skip element untill the index on parent function
+    let breakIndex;
+    newData = {}
+    newData.type = "blockquote";
+    newData.value = [];
+    // Check if it's followed by blockquote
+    for(let i = index; i< lexedData.length; i++){
+        // End the loop if it's not followed by blockquote
+        if(!lexedData[i].includes.blockquote){ index = i; breakIndex = i; break; }
+        else{
+            let blockquoteDepthLevel = 0;
+            let trimmedValue = ""
+            // Check blockquote's depth level and remove blockquote syntax from blockquote value
+            for(let j = 0; j< lexedData[i].value.length; j++){
+                // Check blockquote's syntax
+                if(lexedData[i].value[j] === ">") blockquoteDepthLevel++
+                else{
+                    trimmedValue = lexedData[i].value.slice(blockquoteDepthLevel).trim()
+                    break;
+                }        
+            }
+            let blockquoteData = {value: trimmedValue, blockquoteDepthLevel}
+            // Get style and class information about the blockquote
+            if(lexedData[i].includes.classUsage) blockquoteData = checkClassUsage(blockquoteData)
+            if(lexedData[i].includes.inlineStyle) blockquoteData = parseInlineStyle(blockquoteData)
+            if(lexedData[i].includes.link) blockquoteData.value = parseLink(blockquoteData.value)
+            // Push the data
+            newData.value.push(blockquoteData)
+        }
+    }
+    // A recursive function to parse blockquote and it's children to html tags
+    const parseDescendants = (parent, data, index) => {
+        let result = ""
+        for(let i = index; i< data.value.length; i++){
+            // Break when meet a blockquote with the same depth level and it's index is higher than parent index
+            if(parent === data.value[i].blockquoteDepthLevel && i !== index) break
+            // If the blockquote depth level is same as parent depth level + 1
+            if(parent + 1 === data.value[i].blockquoteDepthLevel){
+                // If it's not an empty string
+                if(parseDescendants(parent + 1, data, i).length){
+                    result += `<blockquote ${parseStyleAndClassAtribute(data.value[i])}>${data.value[i].value}${parseDescendants(parent +1, data, i)}</blockquote>`
+                }
+                else result += `<blockquote ${parseStyleAndClassAtribute(data.value[i])}>${data.value[i].value}</blockquote>`
+            }
+        }
+        return result;
+    }
+    newData.value = parseDescendants(0, newData, 0)
+    if(!breakIndex) breakIndex = lexedData.length - 1
+    return {data:newData, breakIndex}
+}
+
+const parseImage = (data) => {
+    let newData = {}
+    newData.type = "image"
+    newData.value = data.value
+    if(data.includes.classUsage) newData = checkClassUsage(newData)
+    if(data.includes.inlineStyle) newData = parseInlineStyle(newData)
+    newData.altText = "";
+    newData.imageSrc = "";
+    for(let i = 0; i< newData.value.length; i++){
+        //Check whether if it started with ![
+        if(newData.value[i] === "!" && newData.value[i + 1] === "["){
+            for(let j = i + 2; j< newData.value.length; j++){
+                //Break the loop if it is ended with ]
+                if(newData.value[j] === "]"){
+                    i = j;
+                    break;
+                }else newData.altText += newData.value[j] //Otherwise save it as Alt text
+            }
+        }else if(newData.value[i] === "("){
+            for(let j = i + 1; j< newData.value.length; j++){
+                if(newData.value[j] === ")"){
+                    break;
+                }else newData.imageSrc += newData.value[j] //Get image source
+            }
+        }
+    }
+    return newData
+}
+
+const parseHeading = data => {
+    newData = {}
+    newData.type = "heading";
+    newData.headingLevel = 0;
+    for(let j = 0; j< data.value.length; j++){
+        // Stop the loop when the character is NOT "#"
+        if(data.value[j] !== "#") break
+        // Otherwise, add a heading level for the heading
+        else newData.headingLevel += 1
+    }
+    newData.value = data.value.substring(newData.headingLevel + 1)
+    // Check if the heading includes heading Id
+    if(data.includes.headingId){
+        newData.headingId = "";
+        for(let i = 0; i< data.value.length; i++){
+            // Check whether the heading contains '{#' and ends with '}'
+            if(data.value[i] === "{" && data.value[i + 1] === "#"){
+                // Temporary variable to remove heading id chars
+                let newValue = newData.value.slice(0, i-newData.headingLevel-1)
+                for(let j = i + 2; j< data.value.length; j++){
+                    if(data.value[j] === "}"){
+                        newData.value = newValue + newData.value.slice(j - newData.headingLevel +1).trim()
+                        break;
+                    }
+                    else newData.headingId += data.value[j]
+                }
+            }
+        }
+        //Remove unnecessary space form heading Id
+        newData.headingId = newData.headingId.trim()
+        if(data.includes.classUsage) newData = checkClassUsage(newData)
+        if(data.includes.inlineStyle) newData = parseInlineStyle(newData)
+        if(data.includes.link) newData.value = parseLink(newData.value)
+    }else{
+        // Class attribute
+        if(data.includes.classUsage) newData = checkClassUsage(newData)
+        if(data.includes.inlineStyle) newData = parseInlineStyle(newData)
+        if(data.includes.link) newData.value = parseLink(newData.value)
+        // Default heading id
+        newData.headingId = newData.value.replace(/<\/?[^>]+(>|$)/g, "").replace(/ /g, '-').replace(/[^a-zA-Z0-6-]/g, '').toLowerCase().substring(0, 50)
+    }
+    return newData
+}
+
 const Parse = lexedData => {
     let parsedData = [];
     // Assign Paragraph Variable
@@ -201,6 +327,7 @@ const Parse = lexedData => {
                             let value = data[i].value.substr(2);
                             value = parseTypography(value)
                             value = escapeCharacters(value)
+                            value = parseLink(value)
                             // Checking class usage
                             let className = checkClassUsage({value})
                             value = className.value
@@ -209,12 +336,45 @@ const Parse = lexedData => {
                             let inlineStyle = parseInlineStyle({value})
                             value = inlineStyle.value
                             inlineStyle = inlineStyle.inlineStyle
+                            if(data[i].includes.image){
+                                let imageData = parseImage(data[i])
+                                value= `<img ${imageData.imageSrc?`src="${imageData.imageSrc}"`:""} ${imageData.altText?`alt="${imageData.altText}"`:""} ${parseStyleAndClassAtribute(data)} />`
+                            }
                             // Add the <li> tag into result and calling this function again
                             result += `<li${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}>${value}</li>`
                         }else{
                             let value = data[i].value;
+                            // Parse all syntax inside the list
+                            if(data[i].includes.horizontalRule) value = "<hr />"
+                            if(data[i].includes.fencedCodeBlock){
+                                if(data.includes.classUsage) data[i] = checkClassUsage(Object.assign({}, data[i], {value}))
+                                if(data.includes.inlineStyle) data[i] = parseInlineStyle(data[i])
+                                value = "<pre><code>";
+                                for(let j = i + 1; j< data.length; j++){
+                                    // Check if the line is a fenced code block close tag
+                                    if(data[j].includes.fencedCodeBlock){
+                                        i = j;
+                                        value += "</code></pre>"
+                                        break;
+                                    }else value += `${replaceSpecialCharacters(data[j].value)}<br />` // Add a <br> tag in the end of each line
+                                }
+                            }
+                            if(data[i].includes.blockquote){
+                                value = parseBlockquote(data, i)
+                                i = value.breakIndex
+                                value = value.data.value
+                            }
+                            if(data[i].includes.heading){
+                                let headingData = parseHeading(data[i])
+                                value = `<h${headingData.headingLevel} ${headingData.headingId?`id = "${headingData.headingId}`:""}" ${parseStyleAndClassAtribute(headingData)}>${headingData.value}</h${headingData.headingLevel}>`
+                            }
                             value = parseTypography(value)
                             value = escapeCharacters(value)
+                            value = parseLink(value)
+                            if(data[i].includes.image){
+                                let imageData = parseImage(data[i])
+                                value= `<img ${imageData.imageSrc?`src="${imageData.imageSrc}"`:""} ${imageData.altText?`alt="${imageData.altText}"`:""} ${parseStyleAndClassAtribute(data)} />`
+                            }
                             let className = checkClassUsage({value})
                             // Checking class usage
                             value = className.value
@@ -224,7 +384,7 @@ const Parse = lexedData => {
                             value = inlineStyle.value
                             inlineStyle = inlineStyle.inlineStyle
                             // Add the <p> tag into result and calling this function again
-                            result += `<p${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}>${value}</p>`
+                            if(value) result += `<p${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}>${value}</p>`
                         }
                         if(data[i].descendants) result += mergeDescendants(data[i].descendants)
                     }
@@ -233,118 +393,17 @@ const Parse = lexedData => {
                 newData.value = mergeDescendants(parseDescendants(newData.value, 0, -1))
             }
             else if(data.includes.blockquote){
-                newData.type = "blockquote";
-                newData.value = [];
-                // Check if it's followed by blockquote
-                for(let i = index; i< lexedData.length; i++){
-                    // End the loop if it's not followed by blockquote
-                    if(!lexedData[i].includes.blockquote){ index = i; break; }
-                    else{
-                        let blockquoteDepthLevel = 0;
-                        let trimmedValue = ""
-                        // Check blockquote's depth level and remove blockquote syntax from blockquote value
-                        for(let j = 0; j< lexedData[i].value.length; j++){
-                            // Check blockquote's syntax
-                            if(lexedData[i].value[j] === ">") blockquoteDepthLevel++
-                            else{
-                                trimmedValue = lexedData[i].value.slice(blockquoteDepthLevel).trim()
-                                break;
-                            }        
-                        }
-                        let blockquoteData = {value: trimmedValue, blockquoteDepthLevel}
-                        // Get style and class information about the blockquote
-                        if(lexedData[i].includes.classUsage) blockquoteData = checkClassUsage(blockquoteData)
-                        if(lexedData[i].includes.inlineStyle) blockquoteData = parseInlineStyle(blockquoteData)
-                        if(lexedData[i].includes.link) blockquoteData.value = parseLink(blockquoteData.value)
-                        // Push the data
-                        newData.value.push(blockquoteData)
-                    }
-                }
-                // A recursive function to parse blockquote and it's children to html tags
-                const parseDescendants = (parent, data, index) => {
-                    let result = ""
-                    for(let i = index; i< data.value.length; i++){
-                        // Break when meet a blockquote with the same depth level and it's index is higher than parent index
-                        if(parent === data.value[i].blockquoteDepthLevel && i !== index) break
-                        // If the blockquote depth level is same as parent depth level + 1
-                        if(parent + 1 === data.value[i].blockquoteDepthLevel){
-                            // If it's not an empty string
-                            if(parseDescendants(parent + 1, data, i).length){
-                                result += `<blockquote ${parseStyleAndClassAtribute(data.value[i])}>${data.value[i].value}${parseDescendants(parent +1, data, i)}</blockquote>`
-                            }
-                            else result += `<blockquote ${parseStyleAndClassAtribute(data.value[i])}>${data.value[i].value}</blockquote>`
-                        }
-                    }
-                    return result;
-                }
-                newData.value = parseDescendants(0, newData, 0)
+                newData = parseBlockquote(lexedData, index)
+                // Skip to not blockquote element
+                index = newData.breakIndex
+                newData = newData.data
             }
             else if(data.includes.image){
-                newData.type = "image"
-                newData.value = data.value
-                if(data.includes.classUsage) newData = checkClassUsage(newData)
-                if(data.includes.inlineStyle) newData = parseInlineStyle(newData)
-                newData.altText = "";
-                newData.imageSrc = "";
-                for(let i = 0; i< newData.value.length; i++){
-                    //Check whether if it started with ![
-                    if(newData.value[i] === "!" && newData.value[i + 1] === "["){
-                        for(let j = i + 2; j< newData.value.length; j++){
-                            //Break the loop if it is ended with ]
-                            if(newData.value[j] === "]"){
-                                i = j;
-                                break;
-                            }else newData.altText += newData.value[j] //Otherwise save it as Alt text
-                        }
-                    }else if(newData.value[i] === "("){
-                        for(let j = i + 1; j< newData.value.length; j++){
-                            if(newData.value[j] === ")"){
-                                break;
-                            }else newData.imageSrc += newData.value[j] //Get image source
-                        }
-                    }
-                }
+                // Calling parseImage function
+                newData = parseImage(data)
             }
             else if(data.includes.heading){
-                newData.type = "heading";
-                newData.headingLevel = 0;
-                for(let j = 0; j< data.value.length; j++){
-                    // Stop the loop when the character is NOT "#"
-                    if(data.value[j] !== "#") break
-                    // Otherwise, add a heading level for the heading
-                    else newData.headingLevel += 1
-                }
-                newData.value = data.value.substring(newData.headingLevel + 1)
-                // Check if the heading includes heading Id
-                if(data.includes.headingId){
-                    newData.headingId = "";
-                    for(let i = 0; i< data.value.length; i++){
-                        // Check whether the heading contains '{#' and ends with '}'
-                        if(data.value[i] === "{" && data.value[i + 1] === "#"){
-                            // Temporary variable to remove heading id chars
-                            let newValue = newData.value.slice(0, i-newData.headingLevel-1)
-                            for(let j = i + 2; j< data.value.length; j++){
-                                if(data.value[j] === "}"){
-                                    newData.value = newValue + newData.value.slice(j - newData.headingLevel +1).trim()
-                                    break;
-                                }
-                                else newData.headingId += data.value[j]
-                            }
-                        }
-                    }
-                    //Remove unnecessary space form heading Id
-                    newData.headingId = newData.headingId.trim()
-                    if(data.includes.classUsage) newData = checkClassUsage(newData)
-                    if(data.includes.inlineStyle) newData = parseInlineStyle(newData)
-                    if(data.includes.link) newData.value = parseLink(newData.value)
-                }else{
-                    // Class attribute
-                    if(data.includes.classUsage) newData = checkClassUsage(newData)
-                    if(data.includes.inlineStyle) newData = parseInlineStyle(newData)
-                    if(data.includes.link) newData.value = parseLink(newData.value)
-                    // Default heading id
-                    newData.headingId = newData.value.replace(/<\/?[^>]+(>|$)/g, "").replace(/ /g, '-').replace(/[^a-zA-Z0-6-]/g, '').toLowerCase().substring(0, 50)
-                }
+                newData = parseHeading(data)
             }
             // Check if it is a plain text
             else if(Object.values(data.includes).indexOf(true) === -1 || 

@@ -101,7 +101,11 @@ const cli = () => {
               if(args[i] === "-open"){
                 process.stdout.write(`Opening ${htmlFileName} on your browser.`)
                 // Open Converted file using "open" module
-                open(htmlFileName).then(() => {
+                const openFile = async (htmlFileName) => {
+                  await open(htmlFileName)
+                  return true;
+                }
+                openFile(htmlFileName).then(() => {
                   CLEAR_LAST_LINE()
                   process.stdout.write(`Opened ${htmlFileName} on your browser.\n`)
                 })
