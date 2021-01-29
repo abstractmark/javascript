@@ -20,7 +20,7 @@ Javascript implementation of abstractmark is on early development progress right
 - [x] Style
 - [ ] Table
 - [x] Underline text
-- [ ] Unordered List
+- [x] Unordered List
 
 ## Setup (development)
 - Clone this repository by typing `git clone https://github.com/abstractmark/javascript.git abstractmark` and get into it by typing `cd abstractmark`

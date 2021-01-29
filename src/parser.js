@@ -237,6 +237,244 @@ const parseHeading = data => {
     return newData
 }
 
+const parseUnorderedList = (lexedData, index) => {
+    let newData = {};
+    let breakIndex;
+    newData.type = "unorderedList";
+    newData.value = [];
+    // Getting all unordered list children
+    for(let i = index; i< lexedData.length; i ++){
+        if(!lexedData[i].includes.unorderedList && !lexedData[i].hasTab){
+            index = i;
+            breakIndex = i;
+            break;
+        }
+        else{
+            newData.value.push(lexedData[i])
+        }
+    }
+    // A recursive function to parse all Unordered List descendants
+    const parseDescendants = (data, index, parentTabs) => {
+        let result = []
+        for(let i = index; i< data.length; i++){
+            // Break the loop if it meets the next same-level unordered list
+            if(data[i].totalTabs === parentTabs && i !== index) break;
+            // Checking if a unordered list is descendant of the unordered list
+            if(data[i].totalTabs === parentTabs + 1){
+                // Checking if it's returning not empty array
+                if(parseDescendants(data, i, data[i].totalTabs).length){
+                    result.push(Object.assign({}, data[i], {descendants: parseDescendants(data, i, data[i].totalTabs)}))
+                }else result.push(data[i])
+            }
+        }
+        return result
+    }
+    // A recursive function to merge descendants parsed from parseDescendants function
+    const mergeDescendants = data => {
+        let result = "<ul>";
+        for(let i = 0; i< data.length; i++){
+            // If the line is new list
+            if(data[i].includes.unorderedList){
+                // Remove list syntax and returning it's value 
+                let value = data[i].value.substr(2);
+                value = parseTypography(value)
+                value = escapeCharacters(value)
+                value = parseLink(value)
+                // Checking class usage
+                let className = checkClassUsage({value})
+                value = className.value
+                className = className.className
+                // Checking inline style
+                let inlineStyle = parseInlineStyle({value})
+                value = inlineStyle.value
+                inlineStyle = inlineStyle.inlineStyle
+                if(data[i].includes.image){
+                    let imageData = parseImage(data[i])
+                    value= `<img ${imageData.imageSrc?`src="${imageData.imageSrc}"`:""} ${imageData.altText?`alt="${imageData.altText}"`:""} ${parseStyleAndClassAtribute(data)} />`
+                }
+                // Add the <li> tag into result and calling this function again
+                result += `<li${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}>${value}</li>`
+            }else{
+                let value = data[i].value;
+                // Parse all syntax inside the list
+                if(data[i].includes.horizontalRule) value = "<hr />"
+                if(data[i].includes.fencedCodeBlock){
+                    if(data.includes.classUsage) data[i] = checkClassUsage(Object.assign({}, data[i], {value}))
+                    if(data.includes.inlineStyle) data[i] = parseInlineStyle(data[i])
+                    value = "<pre><code>";
+                    for(let j = i + 1; j< data.length; j++){
+                        // Check if the line is a fenced code block close tag
+                        if(data[j].includes.fencedCodeBlock){
+                            i = j;
+                            value += "</code></pre>"
+                            break;
+                        }else value += `${replaceSpecialCharacters(data[j].value)}<br />` // Add a <br> tag in the end of each line
+                    }
+                }
+                if(data[i].includes.blockquote){
+                    value = parseBlockquote(data, i)
+                    i = value.breakIndex
+                    value = value.data.value
+                }
+                if(data[i].includes.orderedList){
+                    // Get new data with new indentation level
+                    let newData = [];
+                    for(let j = 0; j< data.length; j++){
+                        if(!data[i].includes.orderedList) break;
+                        else newData.push(Object.assign({}, data[j], {totalTabs: data[j].totalTabs - data[i].totalTabs}))
+                    }
+                    newData = parseOrderedList(newData, i)
+                    i = newData.breakIndex
+                    value = newData.data.value
+                }
+                if(data[i].includes.heading){
+                    let headingData = parseHeading(data[i])
+                    value = `<h${headingData.headingLevel} ${headingData.headingId?`id = "${headingData.headingId}`:""}" ${parseStyleAndClassAtribute(headingData)}>${headingData.value}</h${headingData.headingLevel}>`
+                }
+                value = parseTypography(value)
+                value = escapeCharacters(value)
+                value = parseLink(value)
+                if(data[i].includes.image){
+                    let imageData = parseImage(data[i])
+                    value= `<img ${imageData.imageSrc?`src="${imageData.imageSrc}"`:""} ${imageData.altText?`alt="${imageData.altText}"`:""} ${parseStyleAndClassAtribute(data)} />`
+                }
+                let className = checkClassUsage({value})
+                // Checking class usage
+                value = className.value
+                className = className.className
+                let inlineStyle = parseInlineStyle({value})
+                // Checking inline style
+                value = inlineStyle.value
+                inlineStyle = inlineStyle.inlineStyle
+                // Add the <p> tag into result and calling this function again
+                if(value) result += `<p${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}>${value}</p>`
+            }
+            if(data[i].descendants) result += mergeDescendants(data[i].descendants)
+        }
+        return result + "</ul>";
+    }
+    newData.value = mergeDescendants(parseDescendants(newData.value, 0, -1))
+    if(!breakIndex) breakIndex = lexedData.length - 1
+    return {data: newData, breakIndex}
+}
+
+const parseOrderedList = (lexedData, index) => {
+    let newData = {};
+    let breakIndex = 0;
+    newData.type = "orderedList";
+    newData.value = [];
+    // Getting all ordered list children
+    for(let i = index; i< lexedData.length; i ++){
+        if(!lexedData[i].includes.orderedList && !lexedData[i].hasTab){
+            index = i;
+            breakIndex = i;
+            break;
+        }
+        else{
+            newData.value.push(lexedData[i])
+        }
+    }
+    // A recursive function to parse all Ordered List descendants
+    const parseDescendants = (data, index, parentTabs) => {
+        let result = []
+        for(let i = index; i< data.length; i++){
+            // Break the loop if it meets the next same-level ordered list
+            if(data[i].totalTabs === parentTabs && i !== index) break;
+            // Checking if a ordered list is descendant of the ordered list
+            if(data[i].totalTabs === parentTabs + 1){
+                // Checking if it's returning not empty array
+                if(parseDescendants(data, i, data[i].totalTabs).length){
+                    result.push(Object.assign({}, data[i], {descendants: parseDescendants(data, i, data[i].totalTabs)}))
+                }else result.push(data[i])
+            }
+        }
+        return result
+    }
+    // A recursive function to merge descendants parsed from parseDescendants function
+    const mergeDescendants = data => {
+        let result = "<ol>";
+        for(let i = 0; i< data.length; i++){
+            // If the line is new list
+            if(data[i].includes.orderedList){
+                // Remove list syntax and returning it's value 
+                let totalDigitsToRemove = 0
+                let value = data[i].value
+                for(let j = 0; j< value.length; j++){
+                    if(isNaN(value[j])) break
+                    else totalDigitsToRemove ++
+                }
+                value = value.substr(totalDigitsToRemove + 2)
+                // Parse all syntax
+                value = parseTypography(value)
+                value = escapeCharacters(value)
+                value = parseLink(value)
+                // Checking class usage
+                let className = checkClassUsage({value})
+                value = className.value
+                className = className.className
+                // Checking inline style
+                let inlineStyle = parseInlineStyle({value})
+                value = inlineStyle.value
+                inlineStyle = inlineStyle.inlineStyle
+                if(data[i].includes.image){
+                    let imageData = parseImage(data[i])
+                    value= `<img ${imageData.imageSrc?`src="${imageData.imageSrc}"`:""} ${imageData.altText?`alt="${imageData.altText}"`:""} ${parseStyleAndClassAtribute(data)} />`
+                }
+                // Add the <li> tag into result and calling this function again
+                result += `<li${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}>${value}</li>`
+            }else{
+                let value = data[i].value;
+                // Parse all syntax inside the list
+                if(data[i].includes.horizontalRule) value = "<hr />"
+                if(data[i].includes.fencedCodeBlock){
+                    if(data.includes.classUsage) data[i] = checkClassUsage(Object.assign({}, data[i], {value}))
+                    if(data.includes.inlineStyle) data[i] = parseInlineStyle(data[i])
+                    value = "<pre><code>";
+                    for(let j = i + 1; j< data.length; j++){
+                        // Check if the line is a fenced code block close tag
+                        if(data[j].includes.fencedCodeBlock){
+                            i = j;
+                            value += "</code></pre>"
+                            break;
+                        }else value += `${replaceSpecialCharacters(data[j].value)}<br />` // Add a <br> tag in the end of each line
+                    }
+                }
+                if(data[i].includes.blockquote){
+                    value = parseBlockquote(data, i)
+                    i = value.breakIndex
+                    value = value.data.value
+                }
+                if(data[i].includes.heading){
+                    let headingData = parseHeading(data[i])
+                    value = `<h${headingData.headingLevel} ${headingData.headingId?`id = "${headingData.headingId}`:""}" ${parseStyleAndClassAtribute(headingData)}>${headingData.value}</h${headingData.headingLevel}>`
+                }
+                value = parseTypography(value)
+                value = escapeCharacters(value)
+                value = parseLink(value)
+                if(data[i].includes.image){
+                    let imageData = parseImage(data[i])
+                    value= `<img ${imageData.imageSrc?`src="${imageData.imageSrc}"`:""} ${imageData.altText?`alt="${imageData.altText}"`:""} ${parseStyleAndClassAtribute(data)} />`
+                }
+                let className = checkClassUsage({value})
+                // Checking class usage
+                value = className.value
+                className = className.className
+                let inlineStyle = parseInlineStyle({value})
+                // Checking inline style
+                value = inlineStyle.value
+                inlineStyle = inlineStyle.inlineStyle
+                // Add the <p> tag into result and calling this function again
+                if(value) result += `<p${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}>${value}</p>`
+            }
+            if(data[i].descendants) result += mergeDescendants(data[i].descendants)
+        }
+        return result + "</ol>";
+    }
+    newData.value = mergeDescendants(parseDescendants(newData.value, 0, -1))
+    if(!breakIndex) breakIndex = lexedData.length - 1
+    return {data: newData, breakIndex}
+}
+// Main Function
 const Parse = lexedData => {
     let parsedData = [];
     // Assign Paragraph Variable
@@ -289,11 +527,19 @@ const Parse = lexedData => {
                 newData.value = "<hr />"
             }
             else if(data.includes.unorderedList){
-                newData.type = "unorderedList";
+                newData = parseUnorderedList(lexedData, index)
+                index = newData.breakIndex
+                newData = newData.data
+            }
+            else if(data.includes.orderedList){
+                newData = parseOrderedList(lexedData, index)
+                index = newData.breakIndex
+                newData = newData.data
+                /*newData.type = "orderedList";
                 newData.value = [];
-                // Getting all unordered list children
+                // Getting all ordered list children
                 for(let i = index; i< lexedData.length; i ++){
-                    if(!lexedData[i].includes.unorderedList && !lexedData[i].hasTab){
+                    if(!lexedData[i].includes.orderedList && !lexedData[i].hasTab){
                         index = i;
                         break;
                     }
@@ -301,13 +547,13 @@ const Parse = lexedData => {
                         newData.value.push(lexedData[i])
                     }
                 }
-                // A recursive function to parse all Unordered List descendants
+                // A recursive function to parse all Ordered List descendants
                 const parseDescendants = (data, index, parentTabs) => {
                     let result = []
                     for(let i = index; i< data.length; i++){
-                        // Break the loop if it meets the next same-level unordered list
+                        // Break the loop if it meets the next same-level ordered list
                         if(data[i].totalTabs === parentTabs && i !== index) break;
-                        // Checking if a unordered list is descendant of the unordered list
+                        // Checking if a ordered list is descendant of the ordered list
                         if(data[i].totalTabs === parentTabs + 1){
                             // Checking if it's returning not empty array
                             if(parseDescendants(data, i, data[i].totalTabs).length){
@@ -319,12 +565,19 @@ const Parse = lexedData => {
                 }
                 // A recursive function to merge descendants parsed from parseDescendants function
                 const mergeDescendants = data => {
-                    let result = "<ul>";
+                    let result = "<ol>";
                     for(let i = 0; i< data.length; i++){
                         // If the line is new list
-                        if(data[i].includes.unorderedList){
+                        if(data[i].includes.orderedList){
                             // Remove list syntax and returning it's value 
-                            let value = data[i].value.substr(2);
+                            let totalDigitsToRemove = 0
+                            let value = data[i].value
+                            for(let j = 0; j< value.length; j++){
+                                if(isNaN(value[j])) break
+                                else totalDigitsToRemove ++
+                            }
+                            value = value.substr(totalDigitsToRemove + 2)
+                            // Parse all syntax
                             value = parseTypography(value)
                             value = escapeCharacters(value)
                             value = parseLink(value)
@@ -388,9 +641,9 @@ const Parse = lexedData => {
                         }
                         if(data[i].descendants) result += mergeDescendants(data[i].descendants)
                     }
-                    return result + "</ul>";
+                    return result + "</ol>";
                 }
-                newData.value = mergeDescendants(parseDescendants(newData.value, 0, -1))
+                newData.value = mergeDescendants(parseDescendants(newData.value, 0, -1))*/
             }
             else if(data.includes.blockquote){
                 newData = parseBlockquote(lexedData, index)
@@ -437,8 +690,8 @@ const Parse = lexedData => {
         let htmlData = ""
         for(let i = 0; i< data.length; i++){
             // Check if whether it is a plain text, heading, fenced code block or others
-            // Blockquote will be treated like plain text
-            if(data[i].type === "plain" || data[i].type === "blockquote" || data[i].type === "unorderedList"){
+            // Blockquote and list will be treated like plain text
+            if(data[i].type === "plain" || data[i].type === "blockquote" || data[i].type === "unorderedList" || data[i].type === "orderedList"){
                 // Add br tags if there is next line and the current line is not horizontal rule inside the paragraph
                 htmlData += `${data[i].className || data[i].inlineStyle?`<span ${parseStyleAndClassAtribute(data[i])}>${data[i].value}</span>`:`${data[i].value}`}${data[i + 1] && data[i].value !== "<hr />"?"<br />":""}`
             }else if(data[i].type === "heading"){
