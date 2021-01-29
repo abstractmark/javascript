@@ -119,10 +119,25 @@ const cli = () => {
     }
 }
 
-const AbstractMark = (abstractmark) => {
-  const TokenizedData = Tokenize(abstractmark)
-  const lexedData = Lex(TokenizedData)
-  const parsedData = Parse(lexedData)
-  return parsedData
+class AbstractMark{
+  constructor(source){
+    this.tokenizedData = Tokenize(source)
+    this.lexedData = Lex(this.tokenizedData)
+    this.parsedData = Parse(this.lexedData)
+  }
+  styled(){
+    this.parsedData["head"].push(DEFAULT_STYLE)
+    return `${CONVERT_STYLE_TAGS(this.parsedData['head'])}${this.parsedData['body']}`
+  }
+  styledFullHTML(){
+    this.parsedData["head"].push(DEFAULT_STYLE)
+    return CONVERT_TO_FULL_HTML(this.parsedData)
+  }
+  toHTML(){
+    return `${CONVERT_STYLE_TAGS(this.parsedData['head'])}${this.parsedData['body']}`
+  }
+  fullHTML(){
+    return CONVERT_TO_FULL_HTML(this.parsedData)
+  }
 }
 module.exports = {cli, AbstractMark}

@@ -2,7 +2,7 @@
 For more information about Abstractmark, please visit this [repository](https://github.com/abstractmark/abstractmark).
 
 ## Status
-Javascript implementation of abstractmark is on early development progress right now, building parser currently. Focusing on CLI.
+Javascript implementation of abstractmark is on early development progress right now, building parser currently.
 
 #### Todo:
 
@@ -15,7 +15,7 @@ Javascript implementation of abstractmark is on early development progress right
 - [x] image
 - [x] link
 - [x] Italic text
-- [ ] Ordered List
+- [x] Ordered List
 - [x] Strikethrough text
 - [x] Style
 - [ ] Table
