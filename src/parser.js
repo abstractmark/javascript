@@ -331,6 +331,15 @@ const parseUnorderedList = (lexedData, index) => {
                     let headingData = parseHeading(data[i])
                     value = `<h${headingData.headingLevel} ${headingData.headingId?`id = "${headingData.headingId}`:""}" ${parseStyleAndClassAtribute(headingData)}>${headingData.value}</h${headingData.headingLevel}>`
                 }
+                if(data[i].includes.taskList){
+                    let className = checkClassUsage({value})
+                    value = className.value
+                    className = className.className
+                    let inlineStyle = parseInlineStyle({value})
+                    value = inlineStyle.value
+                    inlineStyle = inlineStyle.inlineStyle
+                    value = `<div ${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}><input type="checkbox" id=${i} ${value[3] === "x" || value[3] === "X"?"checked":""} onclick="return false;" /><label for=${i}>${value.slice(5)}</label></div>`
+                }
                 value = parseTypography(value)
                 value = escapeCharacters(value)
                 value = parseLink(value)
@@ -338,12 +347,12 @@ const parseUnorderedList = (lexedData, index) => {
                     let imageData = parseImage(data[i])
                     value= `<img ${imageData.imageSrc?`src="${imageData.imageSrc}"`:""} ${imageData.altText?`alt="${imageData.altText}"`:""} ${parseStyleAndClassAtribute(data)} />`
                 }
-                let className = checkClassUsage({value})
                 // Checking class usage
+                let className = checkClassUsage({value})
                 value = className.value
                 className = className.className
-                let inlineStyle = parseInlineStyle({value})
                 // Checking inline style
+                let inlineStyle = parseInlineStyle({value})
                 value = inlineStyle.value
                 inlineStyle = inlineStyle.inlineStyle
                 // Add the <p> tag into result and calling this function again
@@ -455,12 +464,21 @@ const parseOrderedList = (lexedData, index) => {
                     let imageData = parseImage(data[i])
                     value= `<img ${imageData.imageSrc?`src="${imageData.imageSrc}"`:""} ${imageData.altText?`alt="${imageData.altText}"`:""} ${parseStyleAndClassAtribute(data)} />`
                 }
-                let className = checkClassUsage({value})
+                if(data[i].includes.taskList){
+                    let className = checkClassUsage({value})
+                    value = className.value
+                    className = className.className
+                    let inlineStyle = parseInlineStyle({value})
+                    value = inlineStyle.value
+                    inlineStyle = inlineStyle.inlineStyle
+                    value = `<div ${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}><input type="checkbox" id=${i} ${value[3] === "x" || value[3] === "X"?"checked":""} onclick="return false;" /><label for=${i}>${value.slice(5)}</label></div>`
+                }
                 // Checking class usage
+                let className = checkClassUsage({value})
                 value = className.value
                 className = className.className
-                let inlineStyle = parseInlineStyle({value})
                 // Checking inline style
+                let inlineStyle = parseInlineStyle({value})
                 value = inlineStyle.value
                 inlineStyle = inlineStyle.inlineStyle
                 // Add the <p> tag into result and calling this function again
@@ -535,115 +553,6 @@ const Parse = lexedData => {
                 newData = parseOrderedList(lexedData, index)
                 index = newData.breakIndex
                 newData = newData.data
-                /*newData.type = "orderedList";
-                newData.value = [];
-                // Getting all ordered list children
-                for(let i = index; i< lexedData.length; i ++){
-                    if(!lexedData[i].includes.orderedList && !lexedData[i].hasTab){
-                        index = i;
-                        break;
-                    }
-                    else{
-                        newData.value.push(lexedData[i])
-                    }
-                }
-                // A recursive function to parse all Ordered List descendants
-                const parseDescendants = (data, index, parentTabs) => {
-                    let result = []
-                    for(let i = index; i< data.length; i++){
-                        // Break the loop if it meets the next same-level ordered list
-                        if(data[i].totalTabs === parentTabs && i !== index) break;
-                        // Checking if a ordered list is descendant of the ordered list
-                        if(data[i].totalTabs === parentTabs + 1){
-                            // Checking if it's returning not empty array
-                            if(parseDescendants(data, i, data[i].totalTabs).length){
-                                result.push(Object.assign({}, data[i], {descendants: parseDescendants(data, i, data[i].totalTabs)}))
-                            }else result.push(data[i])
-                        }
-                    }
-                    return result
-                }
-                // A recursive function to merge descendants parsed from parseDescendants function
-                const mergeDescendants = data => {
-                    let result = "<ol>";
-                    for(let i = 0; i< data.length; i++){
-                        // If the line is new list
-                        if(data[i].includes.orderedList){
-                            // Remove list syntax and returning it's value 
-                            let totalDigitsToRemove = 0
-                            let value = data[i].value
-                            for(let j = 0; j< value.length; j++){
-                                if(isNaN(value[j])) break
-                                else totalDigitsToRemove ++
-                            }
-                            value = value.substr(totalDigitsToRemove + 2)
-                            // Parse all syntax
-                            value = parseTypography(value)
-                            value = escapeCharacters(value)
-                            value = parseLink(value)
-                            // Checking class usage
-                            let className = checkClassUsage({value})
-                            value = className.value
-                            className = className.className
-                            // Checking inline style
-                            let inlineStyle = parseInlineStyle({value})
-                            value = inlineStyle.value
-                            inlineStyle = inlineStyle.inlineStyle
-                            if(data[i].includes.image){
-                                let imageData = parseImage(data[i])
-                                value= `<img ${imageData.imageSrc?`src="${imageData.imageSrc}"`:""} ${imageData.altText?`alt="${imageData.altText}"`:""} ${parseStyleAndClassAtribute(data)} />`
-                            }
-                            // Add the <li> tag into result and calling this function again
-                            result += `<li${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}>${value}</li>`
-                        }else{
-                            let value = data[i].value;
-                            // Parse all syntax inside the list
-                            if(data[i].includes.horizontalRule) value = "<hr />"
-                            if(data[i].includes.fencedCodeBlock){
-                                if(data.includes.classUsage) data[i] = checkClassUsage(Object.assign({}, data[i], {value}))
-                                if(data.includes.inlineStyle) data[i] = parseInlineStyle(data[i])
-                                value = "<pre><code>";
-                                for(let j = i + 1; j< data.length; j++){
-                                    // Check if the line is a fenced code block close tag
-                                    if(data[j].includes.fencedCodeBlock){
-                                        i = j;
-                                        value += "</code></pre>"
-                                        break;
-                                    }else value += `${replaceSpecialCharacters(data[j].value)}<br />` // Add a <br> tag in the end of each line
-                                }
-                            }
-                            if(data[i].includes.blockquote){
-                                value = parseBlockquote(data, i)
-                                i = value.breakIndex
-                                value = value.data.value
-                            }
-                            if(data[i].includes.heading){
-                                let headingData = parseHeading(data[i])
-                                value = `<h${headingData.headingLevel} ${headingData.headingId?`id = "${headingData.headingId}`:""}" ${parseStyleAndClassAtribute(headingData)}>${headingData.value}</h${headingData.headingLevel}>`
-                            }
-                            value = parseTypography(value)
-                            value = escapeCharacters(value)
-                            value = parseLink(value)
-                            if(data[i].includes.image){
-                                let imageData = parseImage(data[i])
-                                value= `<img ${imageData.imageSrc?`src="${imageData.imageSrc}"`:""} ${imageData.altText?`alt="${imageData.altText}"`:""} ${parseStyleAndClassAtribute(data)} />`
-                            }
-                            let className = checkClassUsage({value})
-                            // Checking class usage
-                            value = className.value
-                            className = className.className
-                            let inlineStyle = parseInlineStyle({value})
-                            // Checking inline style
-                            value = inlineStyle.value
-                            inlineStyle = inlineStyle.inlineStyle
-                            // Add the <p> tag into result and calling this function again
-                            if(value) result += `<p${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}>${value}</p>`
-                        }
-                        if(data[i].descendants) result += mergeDescendants(data[i].descendants)
-                    }
-                    return result + "</ol>";
-                }
-                newData.value = mergeDescendants(parseDescendants(newData.value, 0, -1))*/
             }
             else if(data.includes.blockquote){
                 newData = parseBlockquote(lexedData, index)
@@ -656,7 +565,16 @@ const Parse = lexedData => {
                 newData = parseImage(data)
             }
             else if(data.includes.heading){
+                // Calling parseHeading function
                 newData = parseHeading(data)
+            }
+            else if(data.includes.taskList){
+                newData.type = "taskList";
+                data.value[3] === "x" || data.value[3] === "X" ? newData.checked = true: newData.checked = false
+                newData.value = data.value.slice(5).trim()
+                if(data.includes.classUsage) newData = checkClassUsage(newData)
+                if(data.includes.inlineStyle) newData = parseInlineStyle(newData)
+                if(data.includes.link) newData.value = parseLink(newData.value)
             }
             // Check if it is a plain text
             else if(Object.values(data.includes).indexOf(true) === -1 || 
@@ -703,6 +621,8 @@ const Parse = lexedData => {
                 if(parsedStyleTag.indexOf(data[i].value) === -1) parsedStyleTag.push(data[i].value)
             }else if(data[i].type === "image"){
                 htmlData += `<img ${data[i].imageSrc?`src="${data[i].imageSrc}"`:""} ${data[i].altText?`alt="${data[i].altText}"`:""} ${parseStyleAndClassAtribute(data[i])} />`
+            }else if(data[i].type === "taskList"){
+                htmlData += `<div ${parseStyleAndClassAtribute(data[i])}><input type="checkbox" id=${i} ${data[i].checked?"checked":""} onclick="return false;" /><label for="${i}">${data[i].value}</label></div>`
             }
         }
         return htmlData
