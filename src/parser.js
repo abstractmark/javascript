@@ -105,10 +105,12 @@ const escapeCharacters = data => {
     data = data.replace(/\\\{/g, '&#123;')
     data = data.replace(/\\\}/g, '&#125;')
     data = data.replace(/\\\[/g, '&lbrack;')
+    data = data.replace(/\\\]/g, '&rbrack;')
     data = data.replace(/\\\(/g, '&lpar;')
     data = data.replace(/\\\)/g, '&rpar;')
     data = data.replace(/\\\\/g, '&bsol;')
     data = data.replace(/\\\|/g, '&vert;')
+    data = data.replace(/\\\!/g, '&#33;')
     return data
 }
 
@@ -162,7 +164,7 @@ const parseBlockquote = (lexedData, index) => {
     }
     newData.value = parseDescendants(0, newData, 0)
     if(!breakIndex) breakIndex = lexedData.length - 1
-    return {data:newData, breakIndex}
+    return {data:newData, breakIndex, endParagraph: breakIndex === lexedData.length - 1}
 }
 
 const parseImage = (data) => {
@@ -317,6 +319,11 @@ const parseUnorderedList = (lexedData, index) => {
                     i = value.breakIndex
                     value = value.data.value
                 }
+                if(data[i].includes.table){
+                    value = parseTable(data, i)
+                    i = value.breakIndex
+                    value = value.data.value
+                }
                 if(data[i].includes.orderedList){
                     // Get new data with new indentation level
                     let newData = [];
@@ -365,7 +372,7 @@ const parseUnorderedList = (lexedData, index) => {
     }
     newData.value = mergeDescendants(parseDescendants(newData.value, 0, -1))
     if(!breakIndex) breakIndex = lexedData.length - 1
-    return {data: newData, breakIndex}
+    return {data: newData, breakIndex, endParagraph: breakIndex === lexedData.length - 1}
 }
 
 const parseOrderedList = (lexedData, index) => {
@@ -454,6 +461,11 @@ const parseOrderedList = (lexedData, index) => {
                     i = value.breakIndex
                     value = value.data.value
                 }
+                if(data[i].includes.table){
+                    value = parseTable(data, i)
+                    i = value.breakIndex
+                    value = value.data.value
+                }
                 if(data[i].includes.heading){
                     let headingData = parseHeading(data[i])
                     value = `<h${headingData.headingLevel} ${headingData.headingId?`id = "${headingData.headingId}`:""}" ${parseStyleAndClassAtribute(headingData)}>${headingData.value}</h${headingData.headingLevel}>`
@@ -491,7 +503,112 @@ const parseOrderedList = (lexedData, index) => {
     }
     newData.value = mergeDescendants(parseDescendants(newData.value, 0, -1))
     if(!breakIndex) breakIndex = lexedData.length - 1
-    return {data: newData, breakIndex}
+    return {data: newData, breakIndex, endParagraph: breakIndex === lexedData.length - 1}
+}
+
+const parseTable = (lexedData, index) => {
+    let newData = {type: "table", value: {head: [], body: []}};
+    let breakIndex;
+    const parseTableRow = row => {
+        let tableRowValue = []
+        // Checking the table syntax
+        if(row[0] !== "|") return undefined;
+        else{
+            let tableDataValue = "";
+            for(let i = 0; i < row.length; i++){
+                // Parse class usage and inline style
+                if(i === row.length - 1 && row[i] !== "|"){
+                    tableDataValue += row[i]
+                    // Parse class usage and inline style
+                    classUsage = checkClassUsage({value: tableDataValue})
+                    inlineStyle = parseInlineStyle({value: classUsage.value})
+                    // Check if className and inline style is not empty string.
+                    if(classUsage.className.length) newData.className = classUsage.className
+                    if(inlineStyle.inlineStyle.length) newData.inlineStyle = inlineStyle.inlineStyle
+                }
+                else if(row[i] === "|"){
+                    // Pushing table data value to table row value array if it's a not empty string table data value
+                    let value = escapeCharacters(tableDataValue.trim())
+                    // Parse the value if it's image
+                    if(/!\[[^\]]*\]\((.*?)\s*("(?:.*[^"])")?\s*\)/.test(value)){
+                        let newValue = {altText: "", imageSrc: ""}
+                        for(let i = 0; i< value.length; i++){
+                            //Check whether if it started with ![
+                            if(value[i] === "!" && value[i + 1] === "["){
+                                for(let j = i + 2; j< value.length; j++){
+                                    //Break the loop if it is ended with ]
+                                    if(value[j] === "]"){
+                                        i = j;
+                                        break;
+                                    }else newValue.altText += value[j] //Otherwise save it as Alt text
+                                }
+                            }else if(value[i] === "("){
+                                for(let j = i + 1; j< value.length; j++){
+                                    if(value[j] === ")"){
+                                        break;
+                                    }else newValue.imageSrc += value[j] //Get image source
+                                }
+                            }
+                        }
+                        value = `<img src="${newValue.imageSrc}" alt="${newValue.altText}" />`
+                    }else value = parseLink(parseTypography(value))
+                    if(tableDataValue.length) tableRowValue.push(value)
+                    tableDataValue = ""
+                }else{
+                    tableDataValue += row[i]
+                }
+            }
+        }
+        return tableRowValue
+    }
+    for(let i = index; i< lexedData.length; i++){
+        if(!lexedData[i].includes.table){
+            // Skip to not table syntax
+            breakIndex = i;
+            break;
+        }else{
+            if(i === index){
+                newData.value.head = parseTableRow(lexedData[i].value)
+            }else{
+                // Function to check is it a heading syntax (===== OR -----)
+                const checkHeadingSyntax = data => {
+                    for(let j = 0; j < data.length; j++){
+                        for(let k = 0; k< data[j].length; k++){
+                            if(data[j][k] !== "-" && data[j][k] !== "=") return false;
+                        }
+                    }
+                    return true;
+                }
+                // If it's not heading syntax, then push it to tbody
+                if(!checkHeadingSyntax(parseTableRow(lexedData[i].value))){
+                    newData.value.body.push(parseTableRow(lexedData[i].value))
+                }
+                if(i === lexedData.length - 1){
+                    breakIndex = lexedData.length - 1;
+                }
+            }
+        }
+    }
+    //Merge all to html tags
+    const mergeTableRow = (tr, isHeading) => {
+        let trValue = "<tr>";
+        tr.forEach(td => {
+            if(!isHeading) trValue += `<td>${td}</td>`;
+            else trValue += `<th>${td}</th>`
+        })
+        return trValue + "</tr>"
+    }
+    let result = `<table ${parseStyleAndClassAtribute(newData)}><thead>${mergeTableRow(newData.value.head, true)}</thead><tbody>`;
+    newData.value.body.forEach(tr => {
+        result += mergeTableRow(tr, false)
+    })
+    result = `${result}</tbody></table>`;
+    newData.value = result;
+    // Delete inline style and class name key from newData to not to be parsed twice
+    delete newData["inlineStyle"];
+    delete newData["className"];
+    if(!breakIndex) breakIndex = lexedData.length - 1
+    return {data: newData, breakIndex, endParagraph: breakIndex === lexedData.length - 1}
 }
 // Main Function
 const Parse = lexedData => {
@@ -547,85 +664,35 @@ const Parse = lexedData => {
             }
             else if(data.includes.unorderedList){
                 newData = parseUnorderedList(lexedData, index)
+                // Checking if it's end of paragraph / file
+                endParagraph = newData.endParagraph
+                // Skip to not unordered list element
                 index = newData.breakIndex
                 newData = newData.data
             }
             else if(data.includes.orderedList){
                 newData = parseOrderedList(lexedData, index)
+                // Checking if it's end of paragraph / file
+                endParagraph = newData.endParagraph
+                // Skip to not ordered list element
                 index = newData.breakIndex
                 newData = newData.data
             }
             else if(data.includes.blockquote){
                 newData = parseBlockquote(lexedData, index)
+                // Checking if it's end of paragraph / file
+                endParagraph = newData.endParagraph
                 // Skip to not blockquote element
                 index = newData.breakIndex
                 newData = newData.data
             }
             else if(data.includes.table){
-                newData.type = "table";
-                newData.value = {head: [], body: []}
-                let breakIndex;
-                const parseTableRow = row => {
-                    let tableRowValue = []
-                    // Checking the table syntax
-                    if(row[0] !== "|") return undefined;
-                    else{
-                        let tableDataValue = "";
-                        for(let i = 0; i < row.length; i++){
-                            if(row[i] === "|"){
-                                // Pushing table data value to table row value array if it's a not empty string table data value
-                                if(tableDataValue.length) tableRowValue.push(tableDataValue.trim())
-                                tableDataValue = ""
-                            }else{
-                                tableDataValue += row[i]
-                            }
-                        }
-                    }
-                    return tableRowValue
-                }
-                for(let i = index; i< lexedData.length; i++){
-                    if(!lexedData[i].includes.table){
-                        // Skip to not table syntax
-                        breakIndex = i;
-                        break;
-                    }else{
-                        if(i === index){
-                            newData.value.head = parseTableRow(lexedData[i].value)
-                        }else{
-                            // Function to check is it a heading syntax (===== OR -----)
-                            const checkHeadingSyntax = data => {
-                                for(let j = 0; j < data.length; j++){
-                                    for(let k = 0; k< data[j].length; k++){
-                                        if(data[j][k] !== "-" && data[j][k] !== "=") return false;
-                                    }
-                                }
-                                return true;
-                            }
-                            if(!checkHeadingSyntax(parseTableRow(lexedData[i].value))){
-                                newData.value.body.push(parseTableRow(lexedData[i].value))
-                            }
-                            if(i === lexedData.length - 1){
-                                breakIndex = lexedData.length - 1;
-                            }
-                        }
-                    }
-                }
-                //Merge all to html tags
-                const mergeTableRow = (tr, isHeading) => {
-                    let trValue = "<tr>";
-                    tr.forEach(td => {
-                        if(!isHeading) trValue += `<td>${td}</td>`;
-                        else trValue += `<th>${td}</th>`
-                    })
-                    return trValue + "</tr>"
-                }
-                let result = `<table><thead>${mergeTableRow(newData.value.head, true)}</thead><tbody>`;
-                newData.value.body.forEach(tr => {
-                    result += mergeTableRow(tr, false)
-                })
-                result = `${result}</tbody></table>`
-                newData.value = result
-                if(breakIndex) index = breakIndex - 1
+                newData = parseTable(lexedData, index);
+                // Checking if it's end of paragraph / file
+                endParagraph = newData.endParagraph;
+                // Skip to not table element
+                index = newData.breakIndex;
+                newData = newData.data;
             }
             else if(data.includes.image){
                 // Calling parseImage function

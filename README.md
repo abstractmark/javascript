@@ -18,7 +18,7 @@ Javascript implementation of abstractmark is on early development progress right
 - [x] Ordered List
 - [x] Strikethrough text
 - [x] Style
-- [ ] Table
+- [x] Table
 - [x] Task list
 - [x] Underline text
 - [x] Unordered List

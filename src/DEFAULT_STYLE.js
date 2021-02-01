@@ -106,6 +106,7 @@ blockquote {
 }
 table {
     padding: 0;
+    width: 100%;
 }
 table tr {
     border-top: 1px solid #cccccc;
@@ -139,6 +140,10 @@ table tr th :first-child, table tr td :first-child {
 
 table tr th :last-child, table tr td :last-child {
     margin-bottom: 0;
+}
+img{
+    width: inherit;
+    max-width: 100%;
 }
 `.replace(/(\r\n|\n|\r)/g, '')// Remove all whitespace
 
