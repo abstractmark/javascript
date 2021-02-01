@@ -108,6 +108,7 @@ const escapeCharacters = data => {
     data = data.replace(/\\\(/g, '&lpar;')
     data = data.replace(/\\\)/g, '&rpar;')
     data = data.replace(/\\\\/g, '&bsol;')
+    data = data.replace(/\\\|/g, '&vert;')
     return data
 }
 
@@ -560,6 +561,72 @@ const Parse = lexedData => {
                 index = newData.breakIndex
                 newData = newData.data
             }
+            else if(data.includes.table){
+                newData.type = "table";
+                newData.value = {head: [], body: []}
+                let breakIndex;
+                const parseTableRow = row => {
+                    let tableRowValue = []
+                    // Checking the table syntax
+                    if(row[0] !== "|") return undefined;
+                    else{
+                        let tableDataValue = "";
+                        for(let i = 0; i < row.length; i++){
+                            if(row[i] === "|"){
+                                // Pushing table data value to table row value array if it's a not empty string table data value
+                                if(tableDataValue.length) tableRowValue.push(tableDataValue.trim())
+                                tableDataValue = ""
+                            }else{
+                                tableDataValue += row[i]
+                            }
+                        }
+                    }
+                    return tableRowValue
+                }
+                for(let i = index; i< lexedData.length; i++){
+                    if(!lexedData[i].includes.table){
+                        // Skip to not table syntax
+                        breakIndex = i;
+                        break;
+                    }else{
+                        if(i === index){
+                            newData.value.head = parseTableRow(lexedData[i].value)
+                        }else{
+                            // Function to check is it a heading syntax (===== OR -----)
+                            const checkHeadingSyntax = data => {
+                                for(let j = 0; j < data.length; j++){
+                                    for(let k = 0; k< data[j].length; k++){
+                                        if(data[j][k] !== "-" && data[j][k] !== "=") return false;
+                                    }
+                                }
+                                return true;
+                            }
+                            if(!checkHeadingSyntax(parseTableRow(lexedData[i].value))){
+                                newData.value.body.push(parseTableRow(lexedData[i].value))
+                            }
+                            if(i === lexedData.length - 1){
+                                breakIndex = lexedData.length - 1;
+                            }
+                        }
+                    }
+                }
+                //Merge all to html tags
+                const mergeTableRow = (tr, isHeading) => {
+                    let trValue = "<tr>";
+                    tr.forEach(td => {
+                        if(!isHeading) trValue += `<td>${td}</td>`;
+                        else trValue += `<th>${td}</th>`
+                    })
+                    return trValue + "</tr>"
+                }
+                let result = `<table><thead>${mergeTableRow(newData.value.head, true)}</thead><tbody>`;
+                newData.value.body.forEach(tr => {
+                    result += mergeTableRow(tr, false)
+                })
+                result = `${result}</tbody></table>`
+                newData.value = result
+                if(breakIndex) index = breakIndex - 1
+            }
             else if(data.includes.image){
                 // Calling parseImage function
                 newData = parseImage(data)
@@ -608,8 +675,8 @@ const Parse = lexedData => {
         let htmlData = ""
         for(let i = 0; i< data.length; i++){
             // Check if whether it is a plain text, heading, fenced code block or others
-            // Blockquote and list will be treated like plain text
-            if(data[i].type === "plain" || data[i].type === "blockquote" || data[i].type === "unorderedList" || data[i].type === "orderedList"){
+            // Blockquote, list and table will be treated like plain text since its html tags parsed before
+            if(data[i].type === "plain" || data[i].type === "blockquote" || data[i].type === "unorderedList" || data[i].type === "orderedList" || data[i].type === "table"){
                 // Add br tags if there is next line and the current line is not horizontal rule inside the paragraph
                 htmlData += `${data[i].className || data[i].inlineStyle?`<span ${parseStyleAndClassAtribute(data[i])}>${data[i].value}</span>`:`${data[i].value}`}${data[i + 1] && data[i].value !== "<hr />"?"<br />":""}`
             }else if(data[i].type === "heading"){
