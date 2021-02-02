@@ -111,6 +111,20 @@ const escapeCharacters = data => {
     data = data.replace(/\\\\/g, '&bsol;')
     data = data.replace(/\\\|/g, '&vert;')
     data = data.replace(/\\\!/g, '&#33;')
+    data = data.replace(/\\\~/g, '&#126;')
+    data = data.replace(/\\\@/g, '&commat;')
+    data = data.replace(/\\\#/g, '&num;')
+    data = data.replace(/\\\$/g, '&dollar;')
+    data = data.replace(/\\\^/g, '&Hat;')
+    data = data.replace(/\\\=/g, '&equals;')
+    data = data.replace(/\\\+/g, '&plus;')
+    data = data.replace(/\\\;/g, '&semi;')
+    data = data.replace(/\\\:/g, '&colon;')
+    data = data.replace(/\\\,/g, '&comma;')
+    data = data.replace(/\\\./g, '&period;')
+    data = data.replace(/\\\//g, '&sol;')
+    data = data.replace(/\\\?/g, '&quest;')
+    data = data.replace(/\\\-/g, '&#45;')
     return data
 }
 

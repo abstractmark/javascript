@@ -3,7 +3,8 @@ const {Lex} = require('./src/lexer');
 const { Parse } = require('./src/parser');
 const open = require('open')
 const version = require('./package.json').version;
-const DEFAULT_STYLE = require('./src/DEFAULT_STYLE')
+const DEFAULT_STYLE = require('./src/DEFAULT_STYLE');
+const readline = require('readline');
 // Code for command line command
 
 const HELP_TEXT = `
@@ -26,8 +27,8 @@ Abstractmark converting options:
 `
 // Clear last line output on CLI.
 const CLEAR_LAST_LINE = () => {
-  process.stdout.clearLine();
-  process.stdout.cursorTo(0);
+  readline.clearLine(process.stdout, 0);
+  readline.cursorTo(process.stdout, 0);
 }
 
 const CONVERT_STYLE_TAGS = styles => {
