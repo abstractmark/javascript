@@ -1,6 +1,6 @@
 {
-  "name": "abstractmark",
-  "version": "0.1.0",
+  "name": "@abstractmark/abstractmark",
+  "version": "0.1.0-alpha",
   "description": "Javascript implementation of AbstractMark",
   "bin": {
     "abstractmark": "bin/abstractmark"
@@ -14,7 +14,7 @@
     "url": "git+https://github.com/abstractmark/javascript.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "AbstractMark",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/abstractmark/javascript/issues"
@@ -22,5 +22,6 @@
   "homepage": "https://github.com/abstractmark/javascript#readme",
   "dependencies": {
     "open": "^7.3.1"
-  }
+  },
+  "devDependencies": {}
 }
