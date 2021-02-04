@@ -1,11 +1,8 @@
 const {Tokenize} = require('./src/tokenizer');
 const {Lex} = require('./src/lexer');
 const { Parse } = require('./src/parser');
-const open = require('open')
 const version = require('./package.json').version;
 const DEFAULT_STYLE = require('./src/DEFAULT_STYLE');
-const readline = require('readline');
-// Code for command line command
 
 const HELP_TEXT = `
 Usage:
@@ -27,9 +24,14 @@ Abstractmark converting options:
 `
 // Clear last line output on CLI.
 const CLEAR_LAST_LINE = () => {
-  readline.clearLine(process.stdout, 0);
-  readline.cursorTo(process.stdout, 0);
+  // Check if this script run on node js
+  if(typeof window === "undefined"){
+    const readline = require('readline')
+    readline.clearLine(process.stdout, 0);
+    readline.cursorTo(process.stdout, 0);
+  }
 }
+
 
 const CONVERT_STYLE_TAGS = styles => {
   let styletags = ''
@@ -49,7 +51,11 @@ ${CONVERT_STYLE_TAGS(data["head"])}\
 </html>`
 }
 
+// Code for command line command
 const cli = () => {
+  // CHeck if this script run on node js or browser
+  if(typeof window !== "undefined") throw new Error("AbstractMark CLI not avavilable on browser")
+  const open = require('open');
   const args = process.argv.slice(2)
     if(args.length > 0){
       // Check whether the first args is option
@@ -120,25 +126,13 @@ const cli = () => {
     }
 }
 
-class AbstractMark{
-  constructor(source){
-    this.tokenizedData = Tokenize(source)
-    this.lexedData = Lex(this.tokenizedData)
-    this.parsedData = Parse(this.lexedData)
-  }
-  styled(){
-    this.parsedData["head"].push(DEFAULT_STYLE)
-    return `${CONVERT_STYLE_TAGS(this.parsedData['head'])}${this.parsedData['body']}`
-  }
-  styledFullHTML(){
-    this.parsedData["head"].push(DEFAULT_STYLE)
-    return CONVERT_TO_FULL_HTML(this.parsedData)
-  }
-  toHTML(){
-    return `${CONVERT_STYLE_TAGS(this.parsedData['head'])}${this.parsedData['body']}`
-  }
-  fullHTML(){
-    return CONVERT_TO_FULL_HTML(this.parsedData)
-  }
+const AbstractMark = (source, options) => {
+  let tokenizedData = Tokenize(source)
+  let lexedData = Lex(tokenizedData)
+  let parsedData = Parse(lexedData)
+  if(options && options.styled) parsedData['head'].push(DEFAULT_STYLE)
+  if(options && options.fullHTMLTags) return CONVERT_TO_FULL_HTML(parsedData)
+  return `${CONVERT_STYLE_TAGS(parsedData['head'])}${parsedData['body']}`
 }
+
 module.exports = {cli, AbstractMark}
