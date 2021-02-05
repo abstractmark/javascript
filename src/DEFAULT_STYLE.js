@@ -54,6 +54,9 @@ code{
     background-color: #eaeaea;
     border-radius: 6px;
 }
+pre code{
+    padding: 0;
+}
 a{
     color: #0645ad;
     text-decoration: none;

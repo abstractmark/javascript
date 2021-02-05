@@ -42,7 +42,7 @@ const Tokenize = (abstractmark) => {
     //Find the total tabs of each line and delete the totalspace
     for(let i = 0; i< tokenizedData.length; i++){
         // Only continue if totalSpace is not null and is not undefined
-        if(tokenizedData[i].totalSpace !== null && tokenizedData[i].totalSpace !== undefined){
+        if(tokenizedData[i].totalSpace !== null && tokenizedData[i].totalSpace !== undefined && !tokenizedData[i].totalTabs){
             tokenizedData[i].totalTabs = tokenizedData[i].totalSpace / indentationSpace
             delete tokenizedData[i].totalSpace
         }

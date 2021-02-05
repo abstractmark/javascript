@@ -1,5 +1,14 @@
 // Replace all special characters with it's corresponding html entity
-const replaceSpecialCharacters = str => str.replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+const replaceSpecialCharacters = str => {
+    str = str.replace(/&/g, "&amp;").replace(/\*/g, "&ast;")
+    str = str.replace(/>/g, "&gt;").replace(/</g, "&lt;")
+    str = str.replace(/"/g, "&quot;").replace(/'/g, "&#39;")
+    str = str.replace(/\\\`/g, '&#96;').replace(/\`/g, '&#96;')
+    str = str.replace(/\[/g, '&lbrack;').replace(/\]/g, '&rbrack;')
+    str = str.replace(/\{/g, '&#123;').replace(/\}/g, '&#125;')
+    str = str.replace(/\_/g, "&UnderBar;").replace(/!/g, '&#33;');
+    return str;
+}
 // Parse typography inside every data(bold, italic, underline and strikethrough)
 const parseTypography = data => data
     .replace(/\*\*(.*?)\*\*/gim, "<b>$1</b>")
@@ -254,11 +263,32 @@ const parseHeading = data => {
     return newData
 }
 
+// Function to sync indentation inside <pre> tags
+const syncCodeIndentation = data => {
+    let open = false;
+    let defaultIndentation = 0;
+    for(let i = 0; i< data.length; i++){
+        if(data[i].includes.fencedCodeBlock){
+            if(open){
+                open = false;
+            }else{
+                open = true;
+                defaultIndentation = data[i].totalTabs;
+            }
+        }else if(open){
+            data[i].value = "\t".repeat(data[i].totalTabs - defaultIndentation) + data[i].value
+            data[i].totalTabs = defaultIndentation
+        }
+    }
+    return data
+}
+
 const parseUnorderedList = (lexedData, index) => {
     let newData = {};
     let breakIndex;
     newData.type = "unorderedList";
     newData.value = [];
+    lexedData = syncCodeIndentation(lexedData)
     // Getting all unordered list children
     for(let i = index; i< lexedData.length; i ++){
         if(!lexedData[i].includes.unorderedList && !lexedData[i].hasTab){
@@ -394,6 +424,7 @@ const parseOrderedList = (lexedData, index) => {
     let breakIndex = 0;
     newData.type = "orderedList";
     newData.value = [];
+    lexedData = syncCodeIndentation(lexedData)
     // Getting all ordered list children
     for(let i = index; i< lexedData.length; i ++){
         if(!lexedData[i].includes.orderedList && !lexedData[i].hasTab){
