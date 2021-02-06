@@ -276,7 +276,7 @@ const syncCodeIndentation = data => {
                 defaultIndentation = data[i].totalTabs;
             }
         }else if(open){
-            data[i].value = "\t".repeat(data[i].totalTabs - defaultIndentation) + data[i].value
+            if(data[i].totalTabs - defaultIndentation >= 0)data[i].value = "\t".repeat(data[i].totalTabs - defaultIndentation) + data[i].value
             data[i].totalTabs = defaultIndentation
         }
     }
@@ -346,9 +346,9 @@ const parseUnorderedList = (lexedData, index) => {
                 // Parse all syntax inside the list
                 if(data[i].includes.horizontalRule) value = "<hr />"
                 if(data[i].includes.fencedCodeBlock){
-                    if(data.includes.classUsage) data[i] = checkClassUsage(Object.assign({}, data[i], {value}))
-                    if(data.includes.inlineStyle) data[i] = parseInlineStyle(data[i])
-                    value = "<pre><code>";
+                    if(data[i].includes.classUsage) data[i] = checkClassUsage(Object.assign({}, data[i], {value}))
+                    if(data[i].includes.inlineStyle) data[i] = parseInlineStyle(data[i])
+                    value = `<pre ${parseStyleAndClassAtribute(data[i])}><code>`;
                     for(let j = i + 1; j< data.length; j++){
                         // Check if the line is a fenced code block close tag
                         if(data[j].includes.fencedCodeBlock){
@@ -489,9 +489,9 @@ const parseOrderedList = (lexedData, index) => {
                 // Parse all syntax inside the list
                 if(data[i].includes.horizontalRule) value = "<hr />"
                 if(data[i].includes.fencedCodeBlock){
-                    if(data.includes.classUsage) data[i] = checkClassUsage(Object.assign({}, data[i], {value}))
-                    if(data.includes.inlineStyle) data[i] = parseInlineStyle(data[i])
-                    value = "<pre><code>";
+                    if(data[i].includes.classUsage) data[i] = checkClassUsage(Object.assign({}, data[i], {value}))
+                    if(data[i].includes.inlineStyle) data[i] = parseInlineStyle(data[i])
+                    value = `<pre ${parseStyleAndClassAtribute(data[i])}><code>`;
                     for(let j = i + 1; j< data.length; j++){
                         // Check if the line is a fenced code block close tag
                         if(data[j].includes.fencedCodeBlock){
@@ -676,7 +676,8 @@ const Parse = lexedData => {
             // Checking the type of each data
             if(data.includes.fencedCodeBlock){
                 newData.type = "fencedCodeBlock";
-                if(data.includes.classUsage) newData = checkClassUsage(Object.assign({}, newData, {value: data.value}))
+                newData.value = data.value
+                if(data.includes.classUsage) newData = checkClassUsage(newData)
                 if(data.includes.inlineStyle) newData = parseInlineStyle(newData)
                 newData.value = "";
                 for(let j = index + 1; j< lexedData.length; j++){
