@@ -240,7 +240,7 @@ const parseHeading = data => {
                 let newValue = newData.value.slice(0, i-newData.headingLevel-1)
                 for(let j = i + 2; j< data.value.length; j++){
                     if(data.value[j] === "}"){
-                        newData.value = newValue + newData.value.slice(j - newData.headingLevel +1).trim()
+                        newData.value = newValue + newData.value.slice(j - newData.headingLevel).trim()
                         break;
                     }
                     else newData.headingId += data.value[j]
