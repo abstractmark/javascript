@@ -148,6 +148,11 @@ img{
     width: inherit;
     max-width: 100%;
 }
+@media only screen and (max-width: 600px){
+    body{
+        margin: 0 15px !important;
+    }
+}
 `.replace(/(\r\n|\n|\r)/g, '')// Remove all whitespace
 
 module.exports =  DEFAULT_STYLE;

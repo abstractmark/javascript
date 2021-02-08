@@ -7,6 +7,7 @@ const replaceSpecialCharacters = str => {
     str = str.replace(/\[/g, '&lbrack;').replace(/\]/g, '&rbrack;')
     str = str.replace(/\{/g, '&#123;').replace(/\}/g, '&#125;')
     str = str.replace(/\_/g, "&UnderBar;").replace(/!/g, '&#33;');
+    str = str.replace(/\%/g, "&percnt;").replace(/\~/, '&#126;')
     return str;
 }
 // Parse typography inside every data(bold, italic, underline and strikethrough)
