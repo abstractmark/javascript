@@ -766,6 +766,8 @@ const Parse = lexedData => {
                 if(data.includes.classUsage) newData = checkClassUsage(newData)
                 if(data.includes.inlineStyle) newData = parseInlineStyle(newData)
                 if(data.includes.link) newData.value = parseLink(newData.value)
+                // parse typography once again (important for line which contains link)
+                newData.value = parseTypography(newData.value)
             }
             // Plain text
             else paragraphValue.push(data)
