@@ -22,7 +22,7 @@ const checkClassUsage = data => {
     data.className = ""
     for(let i = 0; i< data.value.length; i++){
         // Check whether the value contains '{!' and ends with '}'
-        if(data.value[i] === "{" && data.value[i + 1] === "!"){
+        if(data.value[i] === "{" && data.value[i + 1] === "."){
             // Temporary variable to remove class chars
             let newValue = data.value.slice(0, i)
             for(let j = i + 2; j< data.value.length; j++){

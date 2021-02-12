@@ -8,7 +8,7 @@ const Lex = (tokenizedData) => {
         if(/(.*?)\{((?!(\#|\!)))(.*?)\}/.test(tokenizedData[i].value)) newData.includes.inlineStyle = true
         else newData.includes.inlineStyle = false
         // Check whether the line contains class usage
-        if(/(.*?)\{\!(.*?)\}/.test(tokenizedData[i].value)) newData.includes.classUsage = true
+        if(/(.*?)\{\.(.*?)\}/.test(tokenizedData[i].value)) newData.includes.classUsage = true
         else newData.includes.classUsage = false
         // Check whether the line contains heading ID
         if(/(.*?)\{\#(.*?)\}/.test(tokenizedData[i].value)) newData.includes.headingId = true
