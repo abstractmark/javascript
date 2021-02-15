@@ -3,6 +3,7 @@ const {Lex} = require('./src/lexer');
 const { Parse } = require('./src/parser');
 const version = require('./package.json').version;
 const DEFAULT_STYLE = require('./src/DEFAULT_STYLE');
+const { parse } = require('path');
 
 const HELP_TEXT = `
 Usage:
@@ -32,6 +33,22 @@ const CLEAR_LAST_LINE = () => {
   }
 }
 
+const CONVERT_STYLESHEET = stylesheets => {
+  let stylesheetTags = "";
+  for(let i = 0; i< stylesheets.length; i++){
+    stylesheetTags += `<link rel="stylesheet" href ="${stylesheets[i]}">`
+  }
+  return stylesheetTags
+}
+
+const CONVERT_SCRIPTS = scripts => {
+  let scriptTags = "";
+  for(let i = 0; i< scripts.length; i++){
+    scriptTags += `<script src="${scripts[i]}"></script>`
+  }
+  return scriptTags;
+}
+
 
 const CONVERT_STYLE_TAGS = styles => {
   let styletags = ''
@@ -45,7 +62,9 @@ const CONVERT_TO_FULL_HTML = data => {
 <html lang="en">\
 <head>\
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">\
-${CONVERT_STYLE_TAGS(data["head"])}\
+${CONVERT_STYLE_TAGS(data["styles"])}\
+${CONVERT_STYLESHEET(data["stylesheets"])}\
+${CONVERT_SCRIPTS(data["scripts"])}\
 </head>\
 <body>${data["body"]}</body>\
 </html>`
@@ -94,10 +113,10 @@ const cli = () => {
           else if(args[i] === "-unstyled" || args[i] === "--unstyled") styled = false
         }
         // Default css style
-        if(styled) parsedData['head'].push(DEFAULT_STYLE)
+        if(styled) parsedData['styles'].push(DEFAULT_STYLE)
         let data;
         if(fullHtmlTags) data = CONVERT_TO_FULL_HTML(parsedData)
-        else data = `${CONVERT_STYLE_TAGS(parsedData['head'])}${parsedData['body']}`
+        else data = `${CONVERT_STYLE_TAGS(parsedData['styles'])}${parsedData['body']}`
         // Write converted data into file.
         fs.writeFile(htmlFileName, data, (err) => {
           if(err) throw new Error(err)
@@ -130,9 +149,9 @@ const AbstractMark = (source, options) => {
   let tokenizedData = Tokenize(source)
   let lexedData = Lex(tokenizedData)
   let parsedData = Parse(lexedData)
-  if(options && options.styled) parsedData['head'].push(DEFAULT_STYLE)
+  if(options && options.styled) parsedData['styles'].push(DEFAULT_STYLE)
   if(options && options.fullHTMLTags) return CONVERT_TO_FULL_HTML(parsedData)
-  return `${CONVERT_STYLE_TAGS(parsedData['head'])}${parsedData['body']}`
+  return `${CONVERT_STYLE_TAGS(parsedData['styles'])}${CONVERT_STYLESHEET(parsedData['stylesheets'])}${CONVERT_SCRIPTS(parsedData["scripts"])}${parsedData['body']}`
 }
 
 module.exports = {cli, AbstractMark}

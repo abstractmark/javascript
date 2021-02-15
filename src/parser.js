@@ -705,6 +705,14 @@ const Parse = lexedData => {
                     else newData.value += lexedData[i].value;
                 }
             }
+            else if(data.includes.stylesheet){
+                newData.type = "stylesheet";
+                newData.value = data.value.match(/(https?.\/\/[^\s]+)/g)[0]
+            }
+            else if(data.includes.externalScript){
+                newData.type = "scripts";
+                newData.value = data.value.match(/(https?.\/\/[^\s]+)/g)[0]
+            }
             else if(data.includes.horizontalRule){
                 newData.type = "plain"
                 newData.value = "<hr />"
@@ -785,7 +793,8 @@ const Parse = lexedData => {
         }
     }
     let parsedStyleTag = [];
-
+    let stylesheets = [];
+    let scripts = [];
     // Convert parsed data to HTML tags
     const toHTML = data => {
         let htmlData = ""
@@ -802,6 +811,10 @@ const Parse = lexedData => {
                 htmlData += `<pre ${parseStyleAndClassAtribute(data[i])}><code>${data[i].value}</code></pre>`
             }else if(data[i].type === "defineClass"){
                 if(parsedStyleTag.indexOf(data[i].value) === -1) parsedStyleTag.push(data[i].value)
+            }else if(data[i].type === "stylesheet"){
+                if(stylesheets.indexOf(data[i].value) === -1) stylesheets.push(data[i].value)
+            }else if(data[i].type === "scripts"){
+                if(scripts.indexOf(data[i].value) === -1) scripts.push(data[i].value)
             }else if(data[i].type === "image"){
                 htmlData += `<img ${data[i].imageSrc?`src="${data[i].imageSrc}"`:""} ${data[i].altText?`alt="${data[i].altText}"`:""} ${parseStyleAndClassAtribute(data[i])} />`
             }else if(data[i].type === "taskList"){
@@ -839,7 +852,7 @@ const Parse = lexedData => {
         }
         toHTML(parsedData[i])? !needParagraphTag? needDivisonTag? parsedHtml += `<div>${toHTML(parsedData[i])}</div>` : parsedHtml += toHTML(parsedData[i]) : parsedHtml += `<p>${toHTML(parsedData[i])}</p>`: null;
     }
-    return {body: parsedHtml, head: parsedStyleTag};
+    return {body: parsedHtml, styles: parsedStyleTag, stylesheets, scripts};
 }
 
 module.exports = { Parse }

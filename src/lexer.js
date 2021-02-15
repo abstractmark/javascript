@@ -46,6 +46,12 @@ const Lex = (tokenizedData) => {
         // Check whether the line is a blockquote
         if(/^>+ ./.test(tokenizedData[i].value)) newData.includes.blockquote = true
         else newData.includes.blockquote = false
+        // Check whether the line is including external css
+        if(/stylesheet\s*(=|:)/.test(tokenizedData[i].value)) newData.includes.stylesheet = true
+        else newData.includes.stylesheet = false
+        // Check whether the line is including external javascript
+        if(/script\s*(=|:)/.test(tokenizedData[i].value)) newData.includes.externalScript = true
+        else newData.includes.externalScript = false
         // Copy other keys and value from tokenized data into lexed data
         newData = Object.assign(newData, tokenizedData[i]);
         // Add lexedData into array
