@@ -845,7 +845,7 @@ const Parse = lexedData => {
             }
             // No need <p> tag if there's no any plain text inside the paragraph
             else if(parsedData[i][j].type === "plain"){
-                if(parsedData[i][j].value === "<hr />" && parsedData[i].length === 1){
+                if((parsedData[i][j].value === "<hr />" && parsedData[i].length === 1) || /<\/?[a-z][\s\S]*>/i.test(parsedData[i][j].value)){
                     needParagraphTag = false;
                 }else needParagraphTag = true
             }
