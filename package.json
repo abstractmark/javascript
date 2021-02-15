@@ -1,6 +1,6 @@
 {
   "name": "@abstractmark/abstractmark",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-beta",
   "description": "Javascript implementation of AbstractMark",
   "bin": {
     "abstractmark": "bin/abstractmark"
