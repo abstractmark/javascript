@@ -1,10 +1,15 @@
 // Default css style
 const DEFAULT_STYLE = `
+html, head, body{
+    display: block !important;
+    width: auto !important;
+    visibility: initial !important;
+}
 body{
     margin: 0 50px;
     padding: 0;
     font-size: 15px;
-    font-family: system-ui, Georgia, Palatino, 'Palatino Linotype', Times, 'Times New Roman', serif;;
+    font-family: system-ui, Georgia, Palatino, 'Palatino Linotype', Times, 'Times New Roman', serif;
 }
 
 h1, h2, h3, h4, h5, h6{
