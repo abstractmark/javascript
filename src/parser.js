@@ -369,6 +369,9 @@ const parseUnorderedList = (lexedData, index) => {
                     i = value.breakIndex
                     value = value.data.value
                 }
+                if(data[i].includes.marquee){
+                    value = parseMarquee(data[i]).value
+                }
                 if(data[i].includes.orderedList){
                     // Get new data with new indentation level
                     let newData = [];
@@ -511,6 +514,9 @@ const parseOrderedList = (lexedData, index) => {
                     value = parseTable(data, i)
                     i = value.breakIndex
                     value = value.data.value
+                }
+                if(data[i].includes.marquee){
+                    value = parseMarquee(data[i]).value
                 }
                 if(data[i].includes.heading){
                     let headingData = parseHeading(data[i])
@@ -656,6 +662,20 @@ const parseTable = (lexedData, index) => {
     if(!breakIndex) breakIndex = lexedData.length - 1
     return {data: newData, breakIndex, endParagraph: breakIndex === lexedData.length - 1}
 }
+
+const parseMarquee = data => {
+    let newData = {type: "marquee", value: data.value.substr(2).trim()};
+    // Parse class and inline style
+    newData = checkClassUsage(newData);
+    newData = parseInlineStyle(newData);
+    // Check the marquee direction
+    let direction = data.value.slice(0, 2) === "~>" ? "right": data.value.slice(0, 2) === "<~"? "left": null;
+    newData.value =`<marquee direction="${direction}" ${parseStyleAndClassAtribute(newData)}>${newData.value}</marquee>`;
+    // Remove class and inline style key so that it's not parsed twice
+    delete newData.inlineStyle
+    delete newData.className
+    return newData
+}
 // Main Function
 const Parse = lexedData => {
     let parsedData = [];
@@ -749,6 +769,10 @@ const Parse = lexedData => {
                 index = newData.breakIndex;
                 newData = newData.data;
             }
+            else if(data.includes.marquee){
+                // Calling parseMarquee function
+                newData = parseMarquee(data)
+            }
             else if(data.includes.image){
                 // Calling parseImage function
                 newData = parseImage(data)
@@ -800,8 +824,8 @@ const Parse = lexedData => {
         let htmlData = ""
         for(let i = 0; i< data.length; i++){
             // Check if whether it is a plain text, heading, fenced code block or others
-            // Blockquote, list and table will be treated like plain text since its html tags parsed before
-            if(data[i].type === "plain" || data[i].type === "blockquote" || data[i].type === "unorderedList" || data[i].type === "orderedList" || data[i].type === "table"){
+            // Blockquote, list, table and marquee will be treated like plain text since its html tags parsed before
+            if(data[i].type === "plain" || data[i].type === "blockquote" || data[i].type === "unorderedList" || data[i].type === "orderedList" || data[i].type === "table" || data[i].type === "marquee"){
                 // Add br tags if there is next line and the current line is not horizontal rule inside the paragraph
                 htmlData += `${data[i].className || data[i].inlineStyle?`<span ${parseStyleAndClassAtribute(data[i])}>${data[i].value}</span>`:`${data[i].value}`}${data[i + 1] && data[i].value !== "<hr />"?"<br />":""}`
             }else if(data[i].type === "heading"){

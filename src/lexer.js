@@ -52,6 +52,9 @@ const Lex = (tokenizedData) => {
         // Check whether the line is including external javascript
         if(/script\s*(=|:)/.test(tokenizedData[i].value)) newData.includes.externalScript = true
         else newData.includes.externalScript = false
+        // Check whether the line is marquee tag
+        if(/(<~|~>)\s*(.*?)/.test(tokenizedData[i].value)) newData.includes.marquee = true
+        else newData.includes.marquee = false
         // Copy other keys and value from tokenized data into lexed data
         newData = Object.assign(newData, tokenizedData[i]);
         // Add lexedData into array
