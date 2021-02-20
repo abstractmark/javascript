@@ -418,7 +418,8 @@ const parseUnorderedList = (lexedData, index) => {
         }
         return result + "</ul>";
     }
-    newData.value = mergeDescendants(parseDescendants(newData.value, 0, -1))
+    let parentIndex = newData.value[0].totalTabs -1;
+    newData.value = mergeDescendants(parseDescendants(newData.value, 0, parentIndex))
     if(!breakIndex) breakIndex = lexedData.length - 1
     return {data: newData, breakIndex, endParagraph: breakIndex === lexedData.length - 1}
 }
@@ -553,7 +554,8 @@ const parseOrderedList = (lexedData, index) => {
         }
         return result + "</ol>";
     }
-    newData.value = mergeDescendants(parseDescendants(newData.value, 0, -1))
+    let parentIndex = newData.value[0].totalTabs -1;
+    newData.value = mergeDescendants(parseDescendants(newData.value, 0, parentIndex))
     if(!breakIndex) breakIndex = lexedData.length - 1
     return {data: newData, breakIndex, endParagraph: breakIndex === lexedData.length - 1}
 }
@@ -827,7 +829,7 @@ const Parse = lexedData => {
             // Blockquote, list, table and marquee will be treated like plain text since its html tags parsed before
             if(data[i].type === "plain" || data[i].type === "blockquote" || data[i].type === "unorderedList" || data[i].type === "orderedList" || data[i].type === "table" || data[i].type === "marquee"){
                 // Add br tags if there is next line and the current line is not horizontal rule inside the paragraph
-                htmlData += `${data[i].className || data[i].inlineStyle?`<span ${parseStyleAndClassAtribute(data[i])}>${data[i].value}</span>`:`${data[i].value}`}${data[i + 1] && !/<\/?[a-z][\s\S]*>/i.test(data[i + 1].value) && data[i + 1].type === "plain" && data[i].value !== "<hr />"?"<br />":""}`
+                htmlData += `${data[i].className || data[i].inlineStyle?`<span ${parseStyleAndClassAtribute(data[i])}>${data[i].value}</span>`:`${data[i].value}`}${data[i + 1] && !/<(?!\/?(a|img)(?=>|\s.*>))\/?.*?>/i.test(data[i + 1].value) && data[i + 1].type === "plain" && data[i].value !== "<hr />"?"<br />":""}`
             }else if(data[i].type === "heading"){
                 htmlData += `<h${data[i].headingLevel} ${data[i].headingId?`id = "${data[i].headingId}`:""}" ${parseStyleAndClassAtribute(data[i])}>${data[i].value}</h${data[i].headingLevel}>`
             }else if(data[i].type === "fencedCodeBlock"){
