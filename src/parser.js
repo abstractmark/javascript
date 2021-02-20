@@ -827,7 +827,7 @@ const Parse = lexedData => {
             // Blockquote, list, table and marquee will be treated like plain text since its html tags parsed before
             if(data[i].type === "plain" || data[i].type === "blockquote" || data[i].type === "unorderedList" || data[i].type === "orderedList" || data[i].type === "table" || data[i].type === "marquee"){
                 // Add br tags if there is next line and the current line is not horizontal rule inside the paragraph
-                htmlData += `${data[i].className || data[i].inlineStyle?`<span ${parseStyleAndClassAtribute(data[i])}>${data[i].value}</span>`:`${data[i].value}`}${data[i + 1] && !/<\/?[a-z][\s\S]*>/i.test(data[i + 1].value) && data[i].value !== "<hr />"?"<br />":""}`
+                htmlData += `${data[i].className || data[i].inlineStyle?`<span ${parseStyleAndClassAtribute(data[i])}>${data[i].value}</span>`:`${data[i].value}`}${data[i + 1] && !/<\/?[a-z][\s\S]*>/i.test(data[i + 1].value) && data[i].type === "plain" && data[i].value !== "<hr />"?"<br />":""}`
             }else if(data[i].type === "heading"){
                 htmlData += `<h${data[i].headingLevel} ${data[i].headingId?`id = "${data[i].headingId}`:""}" ${parseStyleAndClassAtribute(data[i])}>${data[i].value}</h${data[i].headingLevel}>`
             }else if(data[i].type === "fencedCodeBlock"){
@@ -852,11 +852,11 @@ const Parse = lexedData => {
     for(let i = 0; i< parsedData.length; i++){
         // Check if the paragraph don't need <p> tags
         let needParagraphTag = false;
-        let needDivisonTag = false
+        let needSpanTag = false
         for(let j = 0; j< parsedData[i].length; j++){
             if(parsedData[i][j].type === "heading"){
                 needParagraphTag = false;
-                needDivisonTag = true;
+                needSpanTag = true;
                 break
             }
             // If it's HTML element but not <a> tag
@@ -874,8 +874,9 @@ const Parse = lexedData => {
                 }else needParagraphTag = true
             }
         }
-        toHTML(parsedData[i])? !needParagraphTag? needDivisonTag? parsedHtml += `<div>${toHTML(parsedData[i])}</div>` : parsedHtml += toHTML(parsedData[i]) : parsedHtml += `<p>${toHTML(parsedData[i])}</p>`: null;
+        toHTML(parsedData[i])? !needParagraphTag? needSpanTag? parsedHtml += `<span>${toHTML(parsedData[i])}</span>` : parsedHtml += toHTML(parsedData[i]) : parsedHtml += `<p>${toHTML(parsedData[i])}</p>`: null;
     }
+    //console.log(parsedHtml)
     return {body: parsedHtml, styles: parsedStyleTag, stylesheets, scripts};
 }
 
