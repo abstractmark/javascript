@@ -519,6 +519,17 @@ const parseOrderedList = (lexedData, index) => {
                 if(data[i].includes.marquee){
                     value = parseMarquee(data[i]).value
                 }
+                if(data[i].includes.unorderedList){
+                    // Get new data with new indentation level
+                    let newData = [];
+                    for(let j = 0; j< data.length; j++){
+                        if(!data[i].includes.unorderedList) break;
+                        else newData.push(Object.assign({}, data[j], {totalTabs: data[j].totalTabs - data[i].totalTabs}))
+                    }
+                    newData = parseUnorderedList(newData, i)
+                    i = newData.breakIndex
+                    value = newData.data.value
+                }
                 if(data[i].includes.heading){
                     let headingData = parseHeading(data[i])
                     value = `<h${headingData.headingLevel} ${headingData.headingId?`id = "${headingData.headingId}`:""}" ${parseStyleAndClassAtribute(headingData)}>${headingData.value}</h${headingData.headingLevel}>`
