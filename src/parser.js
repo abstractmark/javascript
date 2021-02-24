@@ -301,7 +301,6 @@ const parseUnorderedList = (lexedData, index) => {
             newData.value.push(lexedData[i])
         }
     }
-    console.log(newData.value)
     // A recursive function to parse all Unordered List descendants
     const parseDescendants = (data, index, parentTabs) => {
         let result = []
@@ -902,7 +901,6 @@ const Parse = lexedData => {
         }
         toHTML(parsedData[i])? !needParagraphTag? parsedHtml += toHTML(parsedData[i]) : parsedHtml += `<p>${toHTML(parsedData[i])}</p>`: null;
     }
-    //console.log(parsedHtml)
     return {body: parsedHtml, styles: parsedStyleTag, stylesheets, scripts};
 }
 

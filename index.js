@@ -3,7 +3,6 @@ const {Lex} = require('./src/lexer');
 const { Parse } = require('./src/parser');
 const version = require('./package.json').version;
 const DEFAULT_STYLE = require('./src/DEFAULT_STYLE');
-const { parse } = require('path');
 
 const HELP_TEXT = `
 Usage:
