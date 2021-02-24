@@ -320,6 +320,8 @@ const parseUnorderedList = (lexedData, index) => {
     // A recursive function to merge descendants parsed from parseDescendants function
     const mergeDescendants = data => {
         let result = "<ul>";
+        let needListTag = true; //check if text in list descendant need this unordered list tag (no need when the descendant is list too)
+        let listDescendantData = ""; // Only used if needListTag is true
         for(let i = 0; i< data.length; i++){
             // If the line is new list
             if(data[i].includes.unorderedList){
@@ -373,6 +375,7 @@ const parseUnorderedList = (lexedData, index) => {
                     value = parseMarquee(data[i]).value
                 }
                 if(data[i].includes.orderedList){
+                    if(needListTag) listDescendantData += result += "</ul>"
                     // Get new data with new indentation level
                     let newData = [];
                     for(let j = 0; j< data.length; j++){
@@ -380,8 +383,9 @@ const parseUnorderedList = (lexedData, index) => {
                         else newData.push(Object.assign({}, data[j], {totalTabs: data[j].totalTabs - data[i].totalTabs}))
                     }
                     newData = parseOrderedList(newData, i)
-                    i = newData.breakIndex
-                    value = newData.data.value
+                    needListTag = false;
+                    i = newData.breakIndex;
+                    listDescendantData += newData.data.value;
                 }
                 if(data[i].includes.heading){
                     let headingData = parseHeading(data[i])
@@ -416,11 +420,14 @@ const parseUnorderedList = (lexedData, index) => {
             }
             if(data[i].descendants) result += mergeDescendants(data[i].descendants)
         }
-        return result + "</ul>";
+        !needListTag? result = listDescendantData: result += "</ul>"
+        return result;
     }
     let parentIndex = newData.value[0].totalTabs -1;
     newData.value = mergeDescendants(parseDescendants(newData.value, 0, parentIndex))
+    // Check if the list ends in the same line as the file latest line
     if(!breakIndex) breakIndex = lexedData.length - 1
+    else breakIndex-=1;
     return {data: newData, breakIndex, endParagraph: breakIndex === lexedData.length - 1}
 }
 
@@ -460,6 +467,8 @@ const parseOrderedList = (lexedData, index) => {
     // A recursive function to merge descendants parsed from parseDescendants function
     const mergeDescendants = data => {
         let result = "<ol>";
+        let needListTag = true; //check if text in list descendant need this unordered list tag (no need when the descendant is list too)
+        let listDescendantData = ""; // Only used if needListTag is true
         for(let i = 0; i< data.length; i++){
             // If the line is new list
             if(data[i].includes.orderedList){
@@ -520,6 +529,7 @@ const parseOrderedList = (lexedData, index) => {
                     value = parseMarquee(data[i]).value
                 }
                 if(data[i].includes.unorderedList){
+                    if(needListTag) listDescendantData += result += "</ol>"
                     // Get new data with new indentation level
                     let newData = [];
                     for(let j = 0; j< data.length; j++){
@@ -527,8 +537,9 @@ const parseOrderedList = (lexedData, index) => {
                         else newData.push(Object.assign({}, data[j], {totalTabs: data[j].totalTabs - data[i].totalTabs}))
                     }
                     newData = parseUnorderedList(newData, i)
-                    i = newData.breakIndex
-                    value = newData.data.value
+                    i = newData.breakIndex;
+                    needListTag = false;
+                    listDescendantData += newData.data.value;
                 }
                 if(data[i].includes.heading){
                     let headingData = parseHeading(data[i])
@@ -563,11 +574,14 @@ const parseOrderedList = (lexedData, index) => {
             }
             if(data[i].descendants) result += mergeDescendants(data[i].descendants)
         }
-        return result + "</ol>";
+        !needListTag? result = listDescendantData: result += "</ol>";
+        return result;
     }
     let parentIndex = newData.value[0].totalTabs -1;
     newData.value = mergeDescendants(parseDescendants(newData.value, 0, parentIndex))
+    // Check if the list ends in the same line as the file latest line
     if(!breakIndex) breakIndex = lexedData.length - 1
+    else breakIndex -= 1;
     return {data: newData, breakIndex, endParagraph: breakIndex === lexedData.length - 1}
 }
 
