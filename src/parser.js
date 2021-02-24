@@ -292,7 +292,7 @@ const parseUnorderedList = (lexedData, index) => {
     lexedData = syncCodeIndentation(lexedData)
     // Getting all unordered list children
     for(let i = index; i< lexedData.length; i ++){
-        if(!lexedData[i].includes.unorderedList && !lexedData[i].hasTab){
+        if(!lexedData[i].includes.unorderedList && (!lexedData[i].hasTab || lexedData[i].totalTabs < newData.value[0]?.totalTabs)){
             index = i;
             breakIndex = i;
             break;
@@ -301,6 +301,7 @@ const parseUnorderedList = (lexedData, index) => {
             newData.value.push(lexedData[i])
         }
     }
+    console.log(newData.value)
     // A recursive function to parse all Unordered List descendants
     const parseDescendants = (data, index, parentTabs) => {
         let result = []
@@ -439,7 +440,7 @@ const parseOrderedList = (lexedData, index) => {
     lexedData = syncCodeIndentation(lexedData)
     // Getting all ordered list children
     for(let i = index; i< lexedData.length; i ++){
-        if(!lexedData[i].includes.orderedList && !lexedData[i].hasTab){
+        if(!lexedData[i].includes.orderedList && (!lexedData[i].hasTab || lexedData[i].totalTabs < newData.value[0]?.totalTabs)){
             index = i;
             breakIndex = i;
             break;
@@ -879,11 +880,9 @@ const Parse = lexedData => {
     for(let i = 0; i< parsedData.length; i++){
         // Check if the paragraph don't need <p> tags
         let needParagraphTag = false;
-        let needSpanTag = false
         for(let j = 0; j< parsedData[i].length; j++){
             if(parsedData[i][j].type === "heading"){
                 needParagraphTag = false;
-                needSpanTag = true;
                 break
             }
             // If it's HTML element but not <a> tag
@@ -901,7 +900,7 @@ const Parse = lexedData => {
                 }else needParagraphTag = true
             }
         }
-        toHTML(parsedData[i])? !needParagraphTag? needSpanTag? parsedHtml += `<span>${toHTML(parsedData[i])}</span>` : parsedHtml += toHTML(parsedData[i]) : parsedHtml += `<p>${toHTML(parsedData[i])}</p>`: null;
+        toHTML(parsedData[i])? !needParagraphTag? parsedHtml += toHTML(parsedData[i]) : parsedHtml += `<p>${toHTML(parsedData[i])}</p>`: null;
     }
     //console.log(parsedHtml)
     return {body: parsedHtml, styles: parsedStyleTag, stylesheets, scripts};
