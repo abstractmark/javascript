@@ -292,7 +292,7 @@ const parseUnorderedList = (lexedData, index) => {
     lexedData = syncCodeIndentation(lexedData)
     // Getting all unordered list children
     for(let i = index; i< lexedData.length; i ++){
-        if(!lexedData[i].includes.unorderedList && (!lexedData[i].hasTab || (newData.value[0] && lexedData[i].totalTabs < newData.value[0].totalTabs))){
+        if(!lexedData[i].includes.unorderedList && (!lexedData[i].hasTab || (newData.value[0] && lexedData[i].totalTabs <= newData.value[0].totalTabs))){
             index = i;
             breakIndex = i;
             break;
@@ -439,7 +439,7 @@ const parseOrderedList = (lexedData, index) => {
     lexedData = syncCodeIndentation(lexedData)
     // Getting all ordered list children
     for(let i = index; i< lexedData.length; i ++){
-        if(!lexedData[i].includes.orderedList && (!lexedData[i].hasTab || (newData.value[0] && lexedData[i].totalTabs < newData.value[0].totalTabs))){
+        if(!lexedData[i].includes.orderedList && (!lexedData[i].hasTab || (newData.value[0] && lexedData[i].totalTabs <= newData.value[0].totalTabs))){
             index = i;
             breakIndex = i;
             break;
