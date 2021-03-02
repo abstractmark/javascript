@@ -188,6 +188,7 @@ const parseBlockquote = (lexedData, index) => {
     }
     newData.value = parseDescendants(0, newData, 0)
     if(!breakIndex) breakIndex = lexedData.length - 1
+    else breakIndex -= 1
     return {data:newData, breakIndex, endParagraph: breakIndex === lexedData.length - 1}
 }
 
@@ -707,6 +708,7 @@ const parseTable = (lexedData, index) => {
     delete newData["inlineStyle"];
     delete newData["className"];
     if(!breakIndex) breakIndex = lexedData.length - 1
+    else breakIndex -= 1
     return {data: newData, breakIndex, endParagraph: breakIndex === lexedData.length - 1}
 }
 
