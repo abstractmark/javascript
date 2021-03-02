@@ -34,7 +34,7 @@ const checkClassUsage = data => {
                 }else data.className += data.value[j]
             }
         }
-    };
+    }
     return data;
 }
 
@@ -141,7 +141,7 @@ const escapeCharacters = data => {
 const parseBlockquote = (lexedData, index) => {
     // index used to skip element untill the index on parent function
     let breakIndex;
-    newData = {}
+    let newData = {}
     newData.type = "blockquote";
     newData.value = [];
     // Check if it's followed by blockquote
@@ -222,7 +222,7 @@ const parseImage = (data) => {
 }
 
 const parseHeading = data => {
-    newData = {}
+    let newData = {}
     newData.type = "heading";
     newData.headingLevel = 0;
     for(let j = 0; j< data.value.length; j++){
@@ -389,7 +389,7 @@ const parseUnorderedList = (lexedData, index) => {
                         if(!data[i].includes.orderedList) break;
                         else newData.push(Object.assign({}, data[j], {totalTabs: data[j].totalTabs - data[i].totalTabs}))
                     }
-                    parsedData = parseOrderedList(newData, i)
+                    let parsedData = parseOrderedList(newData, i)
                     needListTag = false;
                     i = parsedData.breakIndex;
                     listDescendantData += parsedData.data.value;
@@ -620,8 +620,8 @@ const parseTable = (lexedData, index) => {
                 if(i === row.length - 1 && row[i] !== "|"){
                     tableDataValue += row[i]
                     // Parse class usage and inline style
-                    classUsage = checkClassUsage({value: tableDataValue})
-                    inlineStyle = parseInlineStyle({value: classUsage.value})
+                    let classUsage = checkClassUsage({value: tableDataValue})
+                    let inlineStyle = parseInlineStyle({value: classUsage.value})
                     // Check if className and inline style is not empty string.
                     if(classUsage.className.length) newData.className = classUsage.className
                     if(inlineStyle.inlineStyle.length) newData.inlineStyle = inlineStyle.inlineStyle
