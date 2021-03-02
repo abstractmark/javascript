@@ -31,8 +31,7 @@ const Tokenize = (abstractmark) => {
     }
     //Greatest common factor function used for finding indentation space.
     const GCF = (a, b) => {
-        if(b === 0) return a;
-        else return GCF(b, a % b);
+        return b === 0 ? a : GCF(b, a % b);
     }
     const findIndentationSpace = arrayOfTotalSpace => arrayOfTotalSpace.reduce(GCF)
     var indentationSpace = findIndentationSpace(totalSpaceArray)
