@@ -322,6 +322,7 @@ const parseUnorderedList = (lexedData, index) => {
         let result = "<ul>";
         let needListTag = true; //check if text in list descendant need this unordered list tag (no need when the descendant is list too)
         let listDescendantData = ""; // Only used if needListTag is true
+        let isUnorderedListDescendent = false; // Check if it's in the same <ul> tag
         for(let i = 0; i< data.length; i++){
             // If the line is new list
             if(data[i].includes.unorderedList){
@@ -343,7 +344,12 @@ const parseUnorderedList = (lexedData, index) => {
                     value= `<img ${imageData.imageSrc?`src="${imageData.imageSrc}"`:""} ${imageData.altText?`alt="${imageData.altText}"`:""} ${parseStyleAndClassAtribute(data)} />`
                 }
                 // Add the <li> tag into result and calling this function again
-                result += `<li${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}>${value}</li>`
+                if(needListTag) result += `<li${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}>${value}</li>`
+                else{
+                    isUnorderedListDescendent = true
+                    listDescendantData += "<ul>"
+                    listDescendantData += `<li${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}>${value}</li>`
+                }
             }else{
                 let value = data[i].value;
                 // Parse all syntax inside the list
@@ -375,17 +381,17 @@ const parseUnorderedList = (lexedData, index) => {
                     value = parseMarquee(data[i]).value
                 }
                 if(data[i].includes.orderedList){
-                    if(needListTag) listDescendantData += result += "</ul>"
+                    if(needListTag) result !== "<ul>" ? listDescendantData += result += "</ul>" : listDescendantData = "";
                     // Get new data with new indentation level
                     let newData = [];
                     for(let j = 0; j< data.length; j++){
                         if(!data[i].includes.orderedList) break;
                         else newData.push(Object.assign({}, data[j], {totalTabs: data[j].totalTabs - data[i].totalTabs}))
                     }
-                    newData = parseOrderedList(newData, i)
+                    parsedData = parseOrderedList(newData, i)
                     needListTag = false;
-                    i = newData.breakIndex;
-                    listDescendantData += newData.data.value;
+                    i = parsedData.breakIndex;
+                    listDescendantData += parsedData.data.value;
                 }
                 if(data[i].includes.heading){
                     let headingData = parseHeading(data[i])
@@ -418,7 +424,11 @@ const parseUnorderedList = (lexedData, index) => {
                 // Add the <p> tag into result and calling this function again
                 if(value) result += `<p${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}>${value}</p>`
             }
-            if(data[i].descendants) result += mergeDescendants(data[i].descendants)
+            if(data[i].descendants) !isUnorderedListDescendent ? result += mergeDescendants(data[i].descendants) : listDescendantData += mergeDescendants(data[i].descendants)
+            if(isUnorderedListDescendent){
+                listDescendantData += "</ul>"
+                isUnorderedListDescendent = false
+            }
         }
         !needListTag? result = listDescendantData: result += "</ul>"
         return result;
@@ -469,6 +479,7 @@ const parseOrderedList = (lexedData, index) => {
         let result = "<ol>";
         let needListTag = true; //check if text in list descendant need this unordered list tag (no need when the descendant is list too)
         let listDescendantData = ""; // Only used if needListTag is true
+        let isOrderedListDescendent = false; // Check if it's in the same <ul> tag
         for(let i = 0; i< data.length; i++){
             // If the line is new list
             if(data[i].includes.orderedList){
@@ -497,7 +508,12 @@ const parseOrderedList = (lexedData, index) => {
                     value= `<img ${imageData.imageSrc?`src="${imageData.imageSrc}"`:""} ${imageData.altText?`alt="${imageData.altText}"`:""} ${parseStyleAndClassAtribute(data)} />`
                 }
                 // Add the <li> tag into result and calling this function again
-                result += `<li${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}>${value}</li>`
+                if(needListTag) result += `<li${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}>${value}</li>`
+                else{
+                    listDescendantData += "<ol>"
+                    isOrderedListDescendent = true
+                    listDescendantData += `<li${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}>${value}</li>`
+                }
             }else{
                 let value = data[i].value;
                 // Parse all syntax inside the list
@@ -529,16 +545,16 @@ const parseOrderedList = (lexedData, index) => {
                     value = parseMarquee(data[i]).value
                 }
                 if(data[i].includes.unorderedList){
-                    if(needListTag) listDescendantData += result += "</ol>"
+                    if(needListTag) result !== "<ol>"? listDescendantData += result += "</ol>": listDescendantData = "";
                     // Get new data with new indentation level
                     let newData = [];
                     for(let j = 0; j< data.length; j++){
                         if(!data[i].includes.unorderedList) break;
                         else newData.push(Object.assign({}, data[j], {totalTabs: data[j].totalTabs - data[i].totalTabs}))
                     }
+                    needListTag = false;
                     newData = parseUnorderedList(newData, i)
                     i = newData.breakIndex;
-                    needListTag = false;
                     listDescendantData += newData.data.value;
                 }
                 if(data[i].includes.heading){
@@ -572,7 +588,11 @@ const parseOrderedList = (lexedData, index) => {
                 // Add the <p> tag into result and calling this function again
                 if(value) result += `<p${inlineStyle?` style="${inlineStyle}"`:""}${className? ` class="${className}"`:""}>${value}</p>`
             }
-            if(data[i].descendants) result += mergeDescendants(data[i].descendants)
+            if(data[i].descendants) !isOrderedListDescendent ? result += mergeDescendants(data[i].descendants) : listDescendantData += mergeDescendants(data[i].descendants)
+            if(isOrderedListDescendent){
+                listDescendantData += "</ol>"
+                isOrderedListDescendent = false
+            }
         }
         !needListTag? result = listDescendantData: result += "</ol>";
         return result;
