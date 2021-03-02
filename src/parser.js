@@ -178,10 +178,7 @@ const parseBlockquote = (lexedData, index) => {
             // If the blockquote depth level is same as parent depth level + 1
             if(parent + 1 === data.value[i].blockquoteDepthLevel){
                 // If it's not an empty string
-                if(parseDescendants(parent + 1, data, i).length){
-                    result += `<blockquote ${parseStyleAndClassAtribute(data.value[i])}>${parseTypography(data.value[i].value)}${parseDescendants(parent +1, data, i)}</blockquote>`
-                }
-                else result += `<blockquote ${parseStyleAndClassAtribute(data.value[i])}>${parseTypography(data.value[i].value)}</blockquote>`
+                result += parseDescendants(parent + 1, data, i).length ? `<blockquote ${parseStyleAndClassAtribute(data.value[i])}>${parseTypography(data.value[i].value)}${parseDescendants(parent +1, data, i)}</blockquote>` : `<blockquote ${parseStyleAndClassAtribute(data.value[i])}>${parseTypography(data.value[i].value)}</blockquote>`;
             }
         }
         return result;
@@ -693,8 +690,7 @@ const parseTable = (lexedData, index) => {
     const mergeTableRow = (tr, isHeading) => {
         let trValue = "<tr>";
         tr.forEach(td => {
-            if(!isHeading) trValue += `<td>${td}</td>`;
-            else trValue += `<th>${td}</th>`
+            trValue += !isHeading ? `<td>${td}</td>` : `<th>${td}</th>`;
         })
         return trValue + "</tr>"
     }
@@ -916,9 +912,7 @@ const Parse = lexedData => {
             }
             // No need <p> tag if there's no any plain text inside the paragraph
             else if(parsedData[i][j].type === "plain"){
-                if((parsedData[i][j].value === "<hr />" && parsedData[i].length === 1) || /<(?!\/?(a|img|b|i|u|del|code)(?=>|\s.*>))\/?.*?>/i.test(parsedData[i][j].value)){
-                    needParagraphTag = false;
-                }else needParagraphTag = true
+                needParagraphTag = (parsedData[i][j].value === "<hr />" && parsedData[i].length === 1) || /<(?!\/?(a|img|b|i|u|del|code)(?=>|\s.*>))\/?.*?>/i.test(parsedData[i][j].value) ? false : true;
             }
         }
         toHTML(parsedData[i])? !needParagraphTag? parsedHtml += toHTML(parsedData[i]) : parsedHtml += `<p>${toHTML(parsedData[i])}</p>`: null;

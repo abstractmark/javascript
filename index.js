@@ -114,8 +114,7 @@ const cli = () => {
         // Default css style
         if(styled) parsedData['styles'].push(DEFAULT_STYLE)
         let data;
-        if(fullHtmlTags) data = CONVERT_TO_FULL_HTML(parsedData)
-        else data = `${CONVERT_STYLE_TAGS(parsedData['styles'])}${parsedData['body']}`
+        data = fullHtmlTags ? CONVERT_TO_FULL_HTML(parsedData) : `${CONVERT_STYLE_TAGS(parsedData['styles'])}${parsedData['body']}`;
         // Write converted data into file.
         fs.writeFile(htmlFileName, data, (err) => {
           if(err) throw new Error(err)
