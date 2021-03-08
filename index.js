@@ -69,6 +69,44 @@ ${CONVERT_SCRIPTS(data["scripts"])}\
 </html>`
 }
 
+const MARQUEE_STYLE = `
+marquee {
+  font-size: 20px;
+  transition: all .4s;
+  margin: 10px 5px;
+}
+
+.marquee {
+  position: relative;
+  overflow: hidden;
+  --move-initial: 120vw;
+  --move-final: -100%;
+}
+
+.marquee[data-direction="right"] {
+  --move-initial: -100%;
+  --move-final: 200vw;
+}
+
+.marquee-content {
+  width: fit-content;
+  display: flex;
+  position: relative;
+  transform: translate3d(var(--move-initial), 0, 0);
+  animation: marquee 15s linear infinite;
+  animation-play-state: running;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translate3d(var(--move-initial), 0, 0);
+  }
+  100% {
+    transform: translate3d(var(--move-final), 0, 0);
+  }
+}
+`.replace(/(\r\n|\n|\r)/g, '')// Remove all whitespace
+
 // Code for command line command
 const cli = () => {
   // CHeck if this script run on node js or browser
@@ -96,6 +134,7 @@ const cli = () => {
         const tokenizedData = Tokenize(sourceData)
         const lexedData = Lex(tokenizedData)
         const parsedData = Parse(lexedData)
+        parsedData["styles"].push(MARQUEE_STYLE) // Add marquee style css
         // Write convert result into html file
         let htmlFileName = null;
         for(let i = 1; i< args.length; i++){

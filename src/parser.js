@@ -715,7 +715,7 @@ const parseMarquee = data => {
     newData = parseInlineStyle(newData);
     // Check the marquee direction
     let direction = data.value.slice(0, 2) === "~>" ? "right": data.value.slice(0, 2) === "<~"? "left": null;
-    newData.value =`<marquee direction="${direction}" ${parseStyleAndClassAtribute(newData)}>${newData.value}</marquee>`;
+    newData.value =`<div class="marquee" data-direction="${direction}"><div class="marquee-content" ${parseStyleAndClassAtribute(newData)}>${newData.value}</div></div>`;
     // Remove class and inline style key so that it's not parsed twice
     delete newData.inlineStyle
     delete newData.className
