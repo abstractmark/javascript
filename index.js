@@ -109,6 +109,7 @@ marquee {
 
 // Code for command line command
 const cli = () => {
+  const performaceCheckerStart = Date.now()
   // CHeck if this script run on node js or browser
   if(typeof window !== "undefined") throw new Error("AbstractMark CLI not avavilable on browser")
   const open = require('open');
@@ -159,7 +160,7 @@ const cli = () => {
           if(err) throw new Error(err)
           else{
             CLEAR_LAST_LINE()
-            process.stdout.write(`\nSuccessfully converted ${file} to ${htmlFileName}\n`)
+            process.stdout.write(`\nSuccessfully converted ${file} to ${htmlFileName} in ${(Date.now() - performaceCheckerStart)}ms\n `)
             for(let i = 1; i< args.length; i++){
               if(args[i] === "-open"){
                 process.stdout.write(`Opening ${htmlFileName} on your browser.`)
