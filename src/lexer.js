@@ -5,7 +5,7 @@ const Lex = (tokenizedData) => {
         // Showing what each line includes.
         newData.includes = {};
         // Check whether the line contains inline style
-        if(/(.*?)\{((?!(\#|\!)))(.*?)\}/.test(tokenizedData[i].value)) newData.includes.inlineStyle = true
+        if(/(.*?)\{((?!(\#|\!|\.)))(.*?)\}/.test(tokenizedData[i].value)) newData.includes.inlineStyle = true
         else newData.includes.inlineStyle = false
         // Check whether the line contains class usage
         if(/(.*?)\{\.(.*?)\}/.test(tokenizedData[i].value)) newData.includes.classUsage = true
