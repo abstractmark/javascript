@@ -10,7 +10,8 @@ For more information about Abstractmark, please visit this [repository](https://
     Type `npm install @abstractmark/abstractmark -g`. To make sure it's installed properly, please type `abstractmark --help`, it should shows abstractmark CLI usage, if it doesn't, please open an issue.
     
 - Usage:
-    - For Converting Abstractmark : run `abstractmark [abstractmark file] [abstractmark options] [args]`
+    - For Converting Abstractmark file: run `abstractmark [abstractmark file] [abstractmark options] [args]`
+    - For Converting Abstractmark files inside a folder: run `abstractmark [folder] [abstractmark options args]`
     - For Abstractmark's Information : run `abstractmark [option]`
     - For more information about AbstractMark CLI, please type `abstractmark --help` on your terminal.
 
