@@ -126,57 +126,73 @@ const cli = () => {
         else if(args[0] === "-v" || args[0] === "-version" || args[0] === "--v" || args[0] === "--version") console.log(version)
         else console.log("Usage: abstractmark [abstractmark file] [abstractmark options] [args]\n\nSee \"abstractmark --help\" for more.")
       }else{
-        let file = args[0];
-        // Check file extension
-        if(!(file.endsWith('.am') || file.endsWith('.abstractmark'))) throw new Error('\x1b[31mAbstractMark: only file with extension .am or .abstractmark is allowed\x1b[0m')
-        // Read file data
-        const fs = require('fs');
-        let sourceData = fs.readFileSync(file, 'utf-8')
-        const tokenizedData = Tokenize(sourceData)
-        const lexedData = Lex(tokenizedData)
-        const parsedData = Parse(lexedData)
-        parsedData["styles"].push(MARQUEE_STYLE) // Add marquee style css
-        // Write convert result into html file
-        let htmlFileName = null;
-        for(let i = 1; i< args.length; i++){
-          if(!args[i].startsWith('-')) htmlFileName = args[i];
-        }
-        process.stdout.write('Converting...')
-        // If user doesn't provide file name
-        if(!htmlFileName) htmlFileName = `${file.split('.').slice(0, -1).join('.')}.html`
-        // Check CLI args
-        let styled = true
-        let fullHtmlTags = true
-        for(let i = 1; i< args.length; i++){
-          if(args[i] === "-t" || args[i] === "--tags") fullHtmlTags = false
-          else if(args[i] === "-unstyled" || args[i] === "--unstyled") styled = false
-        }
-        // Default css style
-        if(styled) parsedData['styles'].push(DEFAULT_STYLE)
-        let data;
-        data = fullHtmlTags ? CONVERT_TO_FULL_HTML(parsedData) : `${CONVERT_STYLE_TAGS(parsedData['styles'])}${parsedData['body']}`;
-        // Write converted data into file.
-        fs.writeFile(htmlFileName, data, (err) => {
-          if(err) throw new Error(err)
-          else{
-            CLEAR_LAST_LINE()
-            process.stdout.write(`\nSuccessfully converted ${file} to ${htmlFileName} in ${(Date.now() - performaceCheckerStart)}ms\n `)
-            for(let i = 1; i< args.length; i++){
-              if(args[i] === "-open"){
-                process.stdout.write(`Opening ${htmlFileName} on your browser.`)
-                // Open Converted file using "open" module
-                const openFile = async (htmlFileName) => {
-                  await open(htmlFileName)
-                  return true;
+        const convert = (sourceData, htmlFileName) => {
+          const tokenizedData = Tokenize(sourceData)
+          const lexedData = Lex(tokenizedData)
+          const parsedData = Parse(lexedData)
+          parsedData["styles"].push(MARQUEE_STYLE) // Add marquee style css
+          // Write convert result into html file
+          process.stdout.write('Converting...')
+          // Check CLI args
+          let styled = true
+          let fullHtmlTags = true
+          for(let i = 1; i< args.length; i++){
+            if(args[i] === "-t" || args[i] === "--tags") fullHtmlTags = false
+            else if(args[i] === "-unstyled" || args[i] === "--unstyled") styled = false
+          }
+          // Default css style
+          if(styled) parsedData['styles'].push(DEFAULT_STYLE)
+          let data;
+          data = fullHtmlTags ? CONVERT_TO_FULL_HTML(parsedData) : `${CONVERT_STYLE_TAGS(parsedData['styles'])}${parsedData['body']}`;
+          // Write converted data into file.
+          fs.writeFile(htmlFileName, data, (err) => {
+            if(err) throw new Error(err)
+            else{
+              CLEAR_LAST_LINE()
+              process.stdout.write(`\nSuccessfully converted ${file} to ${htmlFileName} in ${(Date.now() - performaceCheckerStart)}ms\n `)
+              for(let i = 1; i< args.length; i++){
+                if(args[i] === "-open"){
+                  process.stdout.write(`Opening ${htmlFileName} on your browser.`)
+                  // Open Converted file using "open" module
+                  const openFile = async (htmlFileName) => {
+                    await open(htmlFileName)
+                    return true;
+                  }
+                  openFile(htmlFileName).then(() => {
+                    CLEAR_LAST_LINE()
+                    process.stdout.write(`Opened ${htmlFileName} on your browser.\n`)
+                  })
                 }
-                openFile(htmlFileName).then(() => {
-                  CLEAR_LAST_LINE()
-                  process.stdout.write(`Opened ${htmlFileName} on your browser.\n`)
-                })
               }
             }
+          })
+        }
+        const fs = require('fs');
+        let file = args[0];
+        // Read directory if pointing directory
+        let src = fs.lstatSync(file);
+        if(src.isDirectory()){
+          fs.readdir(file, (err, files) => {
+            files.forEach(fileName => {
+              if(fileName.endsWith('.am') || fileName.endsWith(".abstractmark")){
+                convert(fs.readFileSync(fileName, 'utf-8'), `${fileName.split('.').slice(0, -1).join('.')}.html`);
+              }
+            })
+          })
+        }
+        else{
+          // Check file extension
+          if(!(file.endsWith('.am') || file.endsWith('.abstractmark'))) throw new Error('\x1b[31mAbstractMark: only file with extension .am or .abstractmark is allowed\x1b[0m')
+          // Read file data
+          let sourceData = fs.readFileSync(file, 'utf-8')
+          let htmlFileName = null;
+          for(let i = 1; i< args.length; i++){
+            if(!args[i].startsWith('-')) htmlFileName = args[i];
           }
-        })
+          // If user doesn't provide file name
+          if(!htmlFileName) htmlFileName = `${file.split('.').slice(0, -1).join('.')}.html`
+          convert(sourceData, htmlFileName)
+        }
       }
     }else{
       console.log("Usage: abstractmark [abstractmark file] [abstractmark options] [args]\n\nSee \"abstractmark --help\" for more.")
