@@ -21,7 +21,7 @@ const parseTypography = data => data
 const checkClassUsage = data => {
     data.className = ""
     for(let i = 0; i< data.value.length; i++){
-        // Check whether the value contains '{!' and ends with '}'
+        // Check whether the value contains '{.' and ends with '}'
         if(data.value[i] === "{" && data.value[i + 1] === "."){
             // Temporary variable to remove class chars
             let newValue = data.value.slice(0, i)
@@ -57,7 +57,7 @@ const parseInlineStyle = data => {
     return data;
 }
 
-// A recurstion function to parse all link syntax
+// A recursion function to parse all link syntax
 const parseLink = data => {
     let newData = "";
     let text = ""
