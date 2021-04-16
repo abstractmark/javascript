@@ -33,6 +33,10 @@ For more information about Abstractmark, please visit this [repository](https://
 - Clone this repository by typing `git clone https://github.com/abstractmark/javascript.git abstractmark` and get into it by typing `cd abstractmark`
 - To start setting up abstractmark CLI, type `npm i -g` to install it globally. To make sure abstractmark CLI is installed, type `abstractmark --help`. For more information about  CLI is also written there.
 
+
+## File Structure
+All Files is minfied and the unminfied file is located in `src/unminfied` folder.
+
 ## Code of Conduct
 For the Code of Conduct, please visit [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 
